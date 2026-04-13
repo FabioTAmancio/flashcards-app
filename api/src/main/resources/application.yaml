@@ -1,3 +1,40 @@
 spring:
   application:
-    name: flashcards-app
+    name: api
+  datasource:
+    url: jdbc:postgresql://localhost:5432/flashcards_app
+    username: postgres
+    password: admin
+
+  jpa:
+    hibernate:
+      ddl-auto: validate #flyway vai cudar do banco
+      jdbc:
+        time_zone: America/Sao_Paulo
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+server:
+  port: 8080
+
+api:
+  security:
+    token:
+      secret: ${JWT_SECRET:default-secret-dev}
+
+logging:
+  level:
+    root: INFO

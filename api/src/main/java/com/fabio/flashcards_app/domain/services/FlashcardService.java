@@ -109,7 +109,7 @@ public class FlashcardService {
         flashcardRepository.delete(f);
     }
 
-    private FlashcardResponseDTO toDTO(Flashcard f) {
+    public FlashcardResponseDTO toDTO(Flashcard f) {
         return new FlashcardResponseDTO(
                 f.getId(),
                 f.getFront(),

@@ -19,13 +19,12 @@ public class FlashcardController {
     private FlashcardService service;
 
     //create inside a deck
-    @PostMapping("/deck/{deckId}")
+    @PostMapping()
     public ResponseEntity<FlashcardResponseDTO> create(
-            @PathVariable Long deckId,
             @RequestBody FlashcardRequestDTO dto,
             @AuthenticationPrincipal User user
     ) {
-        return ResponseEntity.ok(service.create(deckId, dto, user));
+        return ResponseEntity.status(201).body(service.create(dto.deckId(), dto, user));
     }
 
     // list by deck
@@ -58,7 +57,7 @@ public class FlashcardController {
 
     // delete
     @DeleteMapping("/{id}")
-    public ResponseEntity<FlashcardResponseDTO> delete(
+    public ResponseEntity<Void> delete(
             @PathVariable Long id,
             @AuthenticationPrincipal User user
     ) {

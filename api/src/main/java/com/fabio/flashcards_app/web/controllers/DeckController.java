@@ -20,11 +20,12 @@ public class DeckController {
     @Autowired
     private DeckService deckService;
 
-    @PostMapping
+    @PostMapping()
     public ResponseEntity<DeckResponseDTO> create(
             @AuthenticationPrincipal User user,
             @RequestBody DeckRequestDTO dto
     ) {
+        System.out.println("USER: " + user);
         return ResponseEntity.ok(deckService.createDeck(user, dto));
     }
 

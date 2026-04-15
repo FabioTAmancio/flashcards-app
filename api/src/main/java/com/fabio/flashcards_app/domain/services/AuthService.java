@@ -1,5 +1,8 @@
 package com.fabio.flashcards_app.domain.services;
 
+import com.fabio.flashcards_app.data.dto.auth.AuthResponseDTO;
+import com.fabio.flashcards_app.data.dto.auth.LoginDTO;
+import com.fabio.flashcards_app.data.dto.auth.RegisterDTO;
 import com.fabio.flashcards_app.domain.models.User;
 import com.fabio.flashcards_app.domain.repositories.UserRepository;
 import com.fabio.flashcards_app.security.JwtService;
@@ -15,26 +18,41 @@ public class AuthService {
     @Autowired
     private JwtService jwtService;
 
-    public String register(String name, String email, String password) {
+    public AuthResponseDTO register(RegisterDTO dto) {
         User user = new User();
-        user.setName(name);
-        user.setEmail(email);
-        user.setPassword(password); // after we gonna encrypting
+        user.setName(dto.name());
+        user.setEmail(dto.email());
+        user.setPassword(dto.password()); // after we gonna encrypting
         user.setRole("USER");
 
         userRepository.save(user);
 
-        return jwtService.generateToken(user);
+        String token = jwtService.generateToken(user);
+
+        return new AuthResponseDTO(
+                token,
+                user.getName(),
+                user.getEmail(),
+                user.getRole()
+        );
     }
 
-    public String login(String email, String password) {
-        User user = userRepository.findByEmail(email)
+    public AuthResponseDTO login(LoginDTO dto) {
+        User user = userRepository.findByEmail(dto.email())
                 .orElseThrow();
 
-        if(!user.getPassword().equals(password)) {
+        // auth password
+        if(!user.getPassword().equals(dto.password())) {
             throw new RuntimeException("Wrong password");
         }
 
-        return jwtService.generateToken(user);
+        String token = jwtService.generateToken(user);
+
+        return new AuthResponseDTO(
+                token,
+                user.getName(),
+                user.getEmail(),
+                user.getRole()
+        );
     }
 }

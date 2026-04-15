@@ -46,16 +46,17 @@ public class FlashcardService {
         flashcardRepository.save(flashcard);
 
         // creates automatic progress
-        FlashcardProgress progress = new FlashcardProgress();
-        progress.setUser(user);
-        progress.setFlashcard(flashcard);
-        progress.setInterval(1);
-        progress.setEaseFactor(2.5);
-        progress.setRepetitions(0);
-        progress.setNextReview(LocalDate.now());
+        if(!progressRepository.existsByUserAndFlashcard(user, flashcard)) {
+            FlashcardProgress progress = new FlashcardProgress();
+            progress.setUser(user);
+            progress.setFlashcard(flashcard);
+            progress.setInterval(1);
+            progress.setEaseFactor(2.5);
+            progress.setRepetitions(0);
+            progress.setNextReview(LocalDate.now());
 
-        progressRepository.save(progress);
-
+            progressRepository.save(progress);
+        }
         return toDTO(flashcard);
     }
 
@@ -72,21 +73,17 @@ public class FlashcardService {
         Flashcard f = flashcardRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Flashcard not found"));
 
-        if(!f.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("User doesn't belong to user");
-        }
+        validateOwnership(f, user);
 
         return toDTO(f);
     }
 
-    //update all
+    //update all entity
     public FlashcardResponseDTO update(Long id, FlashcardRequestDTO dto, User user) {
         Flashcard f = flashcardRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Flashcard not found"));
 
-        if(!f.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("User doesn't belong to user");
-        }
+        validateOwnership(f, user)
 
         f.setFront(dto.front());
         f.setBack(dto.back());
@@ -102,13 +99,20 @@ public class FlashcardService {
         Flashcard f = flashcardRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Flashcard not found"));
 
-        if(!f.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("User doesn't belong to user");
-        }
+        validateOwnership(f, user);
 
+        progressRepository.deleteByFlashcard(f);
         flashcardRepository.delete(f);
     }
 
+    // VALIDATION
+    private void validateOwnership(Flashcard f, User user) {
+        if (!f.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Flashcard doesn't belong to user");
+        }
+    }
+
+    // DTO
     public FlashcardResponseDTO toDTO(Flashcard f) {
         return new FlashcardResponseDTO(
                 f.getId(),

@@ -69,7 +69,11 @@ CREATE TABLE flashcard_progress (
                                     ease_factor DOUBLE PRECISION DEFAULT 2.5,
                                     repetitions INTEGER DEFAULT 0,
 
-                                    next_review DATE NOT NULL,
+                                    next_review TIMESTAMP NOT NULL,
+
+                                    status VARCHAR(20) NOT NULL DEFAULT 'NEW',
+
+                                    last_review TIMESTAMP,
 
                                     CONSTRAINT fk_progress_user
                                         FOREIGN KEY (user_id)

@@ -2,9 +2,10 @@ spring:
   application:
     name: api
   datasource:
-    url: jdbc:postgresql://localhost:5432/flashcards_app
-    username: postgres
-    password: admin
+    #url: jdbc:postgresql://localhost:5432/flashcards_app
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 
   jpa:
     hibernate:
@@ -28,12 +29,12 @@ springdoc:
     enabled: true
 
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 api:
   security:
     token:
-      secret: ${JWT_SECRET:default-secret-dev}
+      secret: ${JWT_SECRET}
 
 logging:
   level:

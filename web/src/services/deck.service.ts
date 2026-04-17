@@ -28,6 +28,9 @@ export const flashcardService = {
         const { data } = await api.post('/flashcards', { deckId, front, back, subject })
         return data
     },
+    import: async (deckId: number, front: string, back: string, subject: string) => {
+        await api.post(`/flashcards/import/${deckId}`, { front, back, subject})
+    },
     update: async (deckId: number, front: string, back: string, subject: string) => {
         const { data } = await api.put('/flashcards', { deckId, front, back, subject })
         return data

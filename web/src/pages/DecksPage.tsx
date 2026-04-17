@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import { deckService } from '../services/deck.service'
+import { deckService, flashcardService } from '../services/deck.service'
 
 type Deck = { id: number; name: string; description: string }
 
@@ -234,11 +234,11 @@ export default function DecksPage() {
   useEffect(() => { load() }, [])
 
   async function handleSave(name: string, desc: string) {
-    if (modal === 'create') {
+    if(modal === 'create') {
       await deckService.create(name, desc)
-    } else if (modal && typeof modal !== 'string') {
+    } else if(modal && typeof modal !== 'string') {
       await deckService.update(modal.id, name, desc)
-    }
+    } 
     setModal(null)
     load()
   }

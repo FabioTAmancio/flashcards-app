@@ -1,5 +1,6 @@
 package com.fabio.flashcards_app.web.controllers;
 
+import com.fabio.flashcards_app.data.dto.flashcard.FlashcardImportRequestDTO;
 import com.fabio.flashcards_app.data.dto.flashcard.FlashcardRequestDTO;
 import com.fabio.flashcards_app.data.dto.flashcard.FlashcardResponseDTO;
 import com.fabio.flashcards_app.domain.models.User;
@@ -25,6 +26,17 @@ public class FlashcardController {
             @AuthenticationPrincipal User user
     ) {
         return ResponseEntity.status(201).body(service.create(dto.deckId(), dto, user));
+    }
+
+    //create all flashcards import to a one deck
+    @PostMapping("/import/{deckId}")
+    public ResponseEntity<?> importFlashcards(
+            @PathVariable Long deckId,
+            @RequestBody List<FlashcardImportRequestDTO> dtos,
+            @AuthenticationPrincipal User user
+    ) {
+        service.importFlashcards(deckId, dtos, user);
+        return ResponseEntity.ok().build();
     }
 
     // list by deck

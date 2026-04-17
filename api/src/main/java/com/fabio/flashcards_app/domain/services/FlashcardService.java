@@ -1,5 +1,6 @@
 package com.fabio.flashcards_app.domain.services;
 
+import com.fabio.flashcards_app.data.dto.flashcard.FlashcardImportRequestDTO;
 import com.fabio.flashcards_app.data.dto.flashcard.FlashcardRequestDTO;
 import com.fabio.flashcards_app.data.dto.flashcard.FlashcardResponseDTO;
 import com.fabio.flashcards_app.domain.models.Deck;
@@ -59,6 +60,35 @@ public class FlashcardService {
         progressRepository.save(progress);
 
         return toDTO(flashcard);
+    }
+
+    //create a list of flashcards by import
+    public void importFlashcards(Long deckId, List<FlashcardImportRequestDTO> dtos, User user) {
+
+        Deck deck = deckRepository.findById(deckId)
+                .orElseThrow(() -> new RuntimeException("Deck not found"));
+
+        List<Flashcard> flashcards = dtos.stream().map(dto -> {
+            Flashcard f = new Flashcard();
+            f.setFront(dto.front());
+            f.setBack(dto.back());
+            f.setSubject(dto.subject());
+            f.setDeck(deck);
+            f.setUser(user);
+            return f;
+        }).toList();
+
+        flashcardRepository.saveAll(flashcards);
+
+        for(Flashcard f : flashcards) {
+            FlashcardProgress p = new FlashcardProgress();
+            p.setFlashcard(f);
+            p.setUser(user);
+            p.setStatus(CardStatus.NEW);
+            p.setNextReview(LocalDateTime.now());
+
+            progressRepository.save(p);
+        }
     }
 
     //list by deck

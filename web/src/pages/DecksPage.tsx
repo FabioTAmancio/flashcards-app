@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
-import { deckService, flashcardService } from '../services/deck.service'
+import { deckService } from '../services/deck.service'
 
 type Deck = { id: number; name: string; description: string }
 

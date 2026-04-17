@@ -1,7 +1,6 @@
 package com.fabio.flashcards_app.config;
 
 import com.fabio.flashcards_app.security.SecurityFilter;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

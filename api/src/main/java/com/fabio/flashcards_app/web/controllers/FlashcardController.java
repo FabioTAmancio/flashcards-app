@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin(origins = "https://flash-dot.up.railway.app")
+
 @RestController
 @RequestMapping("/flashcards")
 public class FlashcardController {

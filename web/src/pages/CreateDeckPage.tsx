@@ -16,13 +16,9 @@ export default function CreateDeckPage() {
         e.preventDefault()
         
         try {
-            await deckService.create({
+            await deckService.create(
                 name,
-                description,
-                subject,
-                color, 
-                isPublic
-            })
+                description)
 
             navigate('/decks')
         } catch (err: any) {

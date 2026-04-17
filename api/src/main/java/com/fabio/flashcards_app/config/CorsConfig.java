@@ -18,7 +18,7 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("https://seu-frontend.up.railway.app")
+                        .allowedOrigins("https://flash-dot.up.railway.app")
                         .allowedMethods("*")
                         .allowedHeaders("*");
             }

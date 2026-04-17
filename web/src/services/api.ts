@@ -8,6 +8,8 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
 
+  console.log("TOKEN ENVIADO:", token)
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
@@ -16,19 +18,17 @@ api.interceptors.request.use((config) => {
 })
 
 // tratament expired token
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if(error.response?.status === 401) {
-      localStorage.clear()
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+// api.interceptors.response.use(
+//   (response) => response,
+//   (error) => {
+//     if(error.response?.status === 401) {
+//       localStorage.removeItem('token')
+//       localStorage.removeItem('user')
+//       window.location.href = '/login'
+//     }
 
-      window.location.href = '/login'
-    }
-
-    return Promise.reject(error)
-  }
-)
+//     return Promise.reject(error)
+//   }
+// )
 
 export default api

@@ -1,11 +1,12 @@
 package com.fabio.flashcards_app.domain.models;
 
 
+import com.fabio.flashcards_app.domain.models.enums.CardStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -23,11 +24,16 @@ public class FlashcardProgress {
     @ManyToOne(optional = false)
     private Flashcard flashcard;
 
-    private Integer interval = 1;
+    private Integer interval = 0;
 
     private Double easeFactor = 2.5;
 
     private Integer repetitions = 0;
 
-    private LocalDate nextReview = LocalDate.now();
+    private LocalDateTime nextReview = LocalDateTime.now();
+
+    private LocalDateTime lastReview = LocalDateTime.now();
+
+    @Enumerated(EnumType.STRING)
+    private CardStatus status;
 }

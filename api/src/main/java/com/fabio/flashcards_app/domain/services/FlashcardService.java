@@ -6,13 +6,14 @@ import com.fabio.flashcards_app.domain.models.Deck;
 import com.fabio.flashcards_app.domain.models.Flashcard;
 import com.fabio.flashcards_app.domain.models.FlashcardProgress;
 import com.fabio.flashcards_app.domain.models.User;
+import com.fabio.flashcards_app.domain.models.enums.CardStatus;
 import com.fabio.flashcards_app.domain.repositories.DeckRepository;
 import com.fabio.flashcards_app.domain.repositories.FlashcardProgressRepository;
 import com.fabio.flashcards_app.domain.repositories.FlashcardRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -45,18 +46,18 @@ public class FlashcardService {
 
         flashcardRepository.save(flashcard);
 
-        // creates automatic progress
-        if(!progressRepository.existsByUserAndFlashcard(user, flashcard)) {
-            FlashcardProgress progress = new FlashcardProgress();
-            progress.setUser(user);
-            progress.setFlashcard(flashcard);
-            progress.setInterval(1);
-            progress.setEaseFactor(2.5);
-            progress.setRepetitions(0);
-            progress.setNextReview(LocalDate.now());
+        FlashcardProgress progress = new FlashcardProgress();
+        progress.setUser(user);
+        progress.setFlashcard(flashcard);
+        progress.setInterval(1);
+        progress.setEaseFactor(2.5);
+        progress.setRepetitions(0);
+        progress.setNextReview(LocalDateTime.now());
+        progress.setStatus(CardStatus.NEW);
+        progress.setLastReview(null);
 
-            progressRepository.save(progress);
-        }
+        progressRepository.save(progress);
+
         return toDTO(flashcard);
     }
 
@@ -83,7 +84,7 @@ public class FlashcardService {
         Flashcard f = flashcardRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Flashcard not found"));
 
-        validateOwnership(f, user)
+        validateOwnership(f, user);
 
         f.setFront(dto.front());
         f.setBack(dto.back());

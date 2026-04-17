@@ -1,27 +1,26 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import ReviewPage from "./pages/ReviewPage"
 import LoginPage from "./pages/LoginPage"
-import DeckPage from "./pages/DeckPage"
-import CreateDeckPage from "./pages/CreateDeckPage"
-import PrivateRoute from "./components/PrivateRoute"
+import DecksPage from "./pages/DecksPage"
+import FlashcardsPage from "./pages/FlashcardPage"
 
 function App() {
   return (<BrowserRouter>
     <Routes>
 
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/" element={<LoginPage />} />
-      <Route path="/decks" element={<DeckPage />} />
-      <Route 
-        path="/review"
-        element={
-          <PrivateRoute>
-            <ReviewPage />
-          </PrivateRoute>
-        }
-      />
-      <Route path="/decks/create" element={<CreateDeckPage />} />
-    </Routes>
+      <Route path="/" element={<Navigate to="/decks" replace />} />
+
+      <Route path="/decks" element={
+         <DecksPage />
+        } />
+        <Route path="/decks/:deckId" element={
+          <FlashcardsPage />
+        } />
+        <Route path="/review" element={
+          <ReviewPage />
+        } />
+      </Routes>
   </BrowserRouter>
   )
 }

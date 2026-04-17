@@ -31,8 +31,9 @@ springdoc:
 server:
   port: ${PORT:8080}
 
-cors:
-  originPatterns: https://flash-dot.up.railway.app,http://localhost:8080
+app:
+  frontend:
+    url: ${FRONTEND_URL}
 
 api:
   security:

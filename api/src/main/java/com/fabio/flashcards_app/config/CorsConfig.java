@@ -26,8 +26,7 @@ public class CorsConfig {
         config.setAllowedOrigins(List.of(
                 frontendUrl,
                 "https://flash-dot.up.railway.app",
-                "http://localhost:5173",
-                "https://sua-api.up.railway.app/auth/login"
+                "http://localhost:5173"
         ));
 
         config.setAllowedMethods(List.of(

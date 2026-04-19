@@ -22,17 +22,23 @@ public class CorsConfig {
 
         CorsConfiguration config = new CorsConfiguration();
 
+        //Alowed Origins
         config.setAllowedOrigins(List.of(
                 frontendUrl,
                 "https://flash-dot.up.railway.app",
-                "http://localhost:5173"
+                "http://localhost:5173",
+                "https://sua-api.up.railway.app/auth/login"
         ));
 
         config.setAllowedMethods(List.of(
-                "GET", "POST", "PUT", "DELETE", "OPTIONS"
+                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
         ));
 
-        config .setAllowedHeaders(List.of("*"));
+        config.setAllowedHeaders(List.of("*"));
+
+        config.setExposedHeaders(List.of("Authorization"));
+
+        config.setMaxAge(3600L);
 
         config.setAllowCredentials(true);
 

@@ -19,16 +19,17 @@ public class SecurityConfig {
     @Autowired
     private SecurityFilter securityFilter;
 
+    // Injeta o CorsConfigurationSource do CorsConfig
     @Autowired
     private CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                // bring CorsConfigurationSource to Spring Securtity
-                // without that, Security response 403 before MVC process CORS
-
-                //.cors(cors -> cors.configurationSource(corsConfigurationSource))
+                // PONTO CRÍTICO: passar o CorsConfigurationSource aqui.
+                // Sem isso, o Spring Security bloqueia o request ANTES de qualquer
+                // configuração de CORS do WebMvcConfigurer ser aplicada.
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
 
                 .csrf(csrf -> csrf.disable())
 
@@ -38,13 +39,13 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
-                        // Swagger (springdoc)
+                        // Swagger/OpenAPI
                         .requestMatchers(
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
-                        // Preflight OPTIONS always permited
+                        // Preflight OPTIONS sempre liberado
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )
@@ -53,6 +54,4 @@ public class SecurityConfig {
 
                 .build();
     }
-
-
 }

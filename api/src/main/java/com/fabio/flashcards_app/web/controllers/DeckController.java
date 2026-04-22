@@ -5,7 +5,6 @@ import com.fabio.flashcards_app.data.dto.deck.DeckResponseDTO;
 import com.fabio.flashcards_app.domain.models.Deck;
 import com.fabio.flashcards_app.domain.models.User;
 import com.fabio.flashcards_app.domain.services.DeckService;
-import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -13,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin(origins = "https://flash-dot.up.railway.app")
 @RestController
 @RequestMapping("/decks")
 public class DeckController {

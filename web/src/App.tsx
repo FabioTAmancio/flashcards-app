@@ -3,6 +3,7 @@ import ReviewPage from "./pages/ReviewPage"
 import LoginPage from "./pages/LoginPage"
 import DecksPage from "./pages/DecksPage"
 import FlashcardsPage from "./pages/FlashcardPage"
+import ImportPage from "./pages/ImportPage"
 
 function App() {
   return (<BrowserRouter>
@@ -19,6 +20,9 @@ function App() {
         } />
         <Route path="/review" element={
           <ReviewPage />
+        } />
+        <Route path="/import" element={
+          <ImportPage />
         } />
       </Routes>
   </BrowserRouter>

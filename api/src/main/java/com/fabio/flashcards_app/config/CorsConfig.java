@@ -14,8 +14,8 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
-    @Value("${app.frontend.url}")
-    private String frontendUrl;
+    //@Value("${app.frontend.url}")
+    private String frontendUrl = "http://fabiotrindade.com.br";
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
@@ -27,7 +27,7 @@ public class CorsConfig {
                 "http://localhost:5174",
                 "http://127.0.0.1:5173",
                 "https://flash-dot.up.railway.app",
-                "https://kalloz.com.br",
+                "http://kalloz.com.br",
                 frontendUrl
         ));
 

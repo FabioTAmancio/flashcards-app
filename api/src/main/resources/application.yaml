@@ -2,14 +2,16 @@ spring:
   application:
     name: api
   datasource:
-    #url: jdbc:postgresql://localhost:5432/flashcards_app
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://localhost:5432/flashcards_app
+    username: postgres
+    password: admin
+    #url: ${DB_URL}
+    #username: ${DB_USERNAME}
+    #password: ${DB_PASSWORD}
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
       jdbc:
         time_zone: America/Sao_Paulo
     show-sql: true
@@ -38,7 +40,8 @@ app:
 api:
   security:
     token:
-      secret: ${JWT_SECRET}
+      #secret: ${JWT_SECRET}
+      secret: ${JWT_SECRET:default-secret-dev}
 
 logging:
   level:

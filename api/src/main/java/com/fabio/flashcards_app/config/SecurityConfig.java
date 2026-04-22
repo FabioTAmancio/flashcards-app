@@ -28,7 +28,7 @@ public class SecurityConfig {
                 // bring CorsConfigurationSource to Spring Securtity
                 // without that, Security response 403 before MVC process CORS
 
-                .cors(cors -> cors.configurationSource(corsConfigurationSource))
+                //.cors(cors -> cors.configurationSource(corsConfigurationSource))
 
                 .csrf(csrf -> csrf.disable())
 

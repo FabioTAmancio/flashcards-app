@@ -9,7 +9,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate #flyway vai cudar do banco
+      ddl-auto: update
       jdbc:
         time_zone: America/Sao_Paulo
     show-sql: true

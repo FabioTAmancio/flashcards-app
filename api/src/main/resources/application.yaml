@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: api
+  datasource:
+    url: jdbc:postgresql://localhost:5432/flashcards_app
+    username: postgres
+    password: admin
+    #url: ${DB_URL}
+    #username: ${DB_USERNAME}
+    #password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+      jdbc:
+        time_zone: America/Sao_Paulo
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+server:
+  port: ${PORT:8080}
+
+app:
+  frontend:
+    url: ${FRONTEND_URL}
+
+api:
+  security:
+    token:
+      #secret: ${JWT_SECRET}
+      secret: ${JWT_SECRET:default-secret-dev}
+
+logging:
+  level:
+    root: INFO

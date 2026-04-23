@@ -1,0 +1,32 @@
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import ReviewPage from "./pages/ReviewPage"
+import LoginPage from "./pages/LoginPage"
+import DecksPage from "./pages/DecksPage"
+import FlashcardsPage from "./pages/FlashcardPage"
+import ImportPage from "./pages/ImportPage"
+
+function App() {
+  return (<BrowserRouter>
+    <Routes>
+
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={<Navigate to="/decks" replace />} />
+
+      <Route path="/decks" element={
+         <DecksPage />
+        } />
+        <Route path="/decks/:deckId" element={
+          <FlashcardsPage />
+        } />
+        <Route path="/review" element={
+          <ReviewPage />
+        } />
+        <Route path="/import" element={
+          <ImportPage />
+        } />
+      </Routes>
+  </BrowserRouter>
+  )
+}
+
+export default App

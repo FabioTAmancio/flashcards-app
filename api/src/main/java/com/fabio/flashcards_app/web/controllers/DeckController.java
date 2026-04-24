@@ -42,6 +42,15 @@ public class DeckController {
     ) {
         return ResponseEntity.ok(deckService.getDeckById(id, user));
     }
+    
+    @PatchMapping("/{id}/toggle-review")
+    public ResponseEntity<DeckResponseDTO> toggleReview(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(deckService.toggleReview(id, user));
+    }
+
 
     @PutMapping("/{id}")
     public ResponseEntity<DeckResponseDTO> update(

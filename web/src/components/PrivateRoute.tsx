@@ -1,14 +1,17 @@
 import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '../store/auth.store'
 
-export default function PrivateRoute({ children }: any) {
-    //const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+export default function PrivateRoute({ children }: { children: React.ReactNode}) {
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+    const hydrated = useAuthStore((s) => s.hydrated)
 
-    const { user, isAuthenticated} = useAuthStore()
-
-    if(!user && !isAuthenticated) {
-        return <Navigate to="/login" />
+    if(!hydrated) {
+        return null
     }
 
-    return children
+    if(!isAuthenticated) {
+        return <Navigate to="/login" replace />
+    }
+
+    return <>{ children }</>
 }

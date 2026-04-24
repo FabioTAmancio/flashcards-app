@@ -9,6 +9,7 @@ type User = {
 interface AuthState {
     user: User | null
     isAuthenticated: boolean
+    hydrated: boolean // true depois que o local storage foi lido
     setUser: (user: User | null) => void
     logout: () => void
 }
@@ -16,6 +17,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => {
 
   const storedUser = localStorage.getItem('user')
+  const token = localStorage.getItem('token')
 
   const user = storedUser && storedUser !== 'undefined'
     ? JSON.parse(storedUser)
@@ -23,14 +25,12 @@ export const useAuthStore = create<AuthState>((set) => {
 
   return {
     user,
-    isAuthenticated: !!user, // ✅ aqui
+    isAuthenticated: !!(user && token), //valido so com o user e o token
+    hydrated: true,
 
     setUser: (user) => {
-      localStorage.setItem('user', JSON.stringify(user))
-      set({
-        user,
-        isAuthenticated: !!user
-      })
+      if (user) localStorage.setItem('user', JSON.stringify(user))
+      useAuthStore.setState({ user, isAuthenticated: !!(user && localStorage.getItem('token')) })
     },
 
     logout: () => {
@@ -45,20 +45,3 @@ export const useAuthStore = create<AuthState>((set) => {
   }
 })
 
-
-// user: JSON.parse(localStorage.getItem('user') || 'null'),
-//     isAuthenticated: !!localStorage.getItem('token'),
-
-//     setUser: (user) => {
-//         if(user) {
-//             localStorage.setItem('user', JSON.stringify(user))
-//             localStorage.setItem('token', localStorage.getItem('token') || '')
-//         }
-//         set({ user, isAuthenticated: !!user})
-//     },
-
-//     logout: () => {
-//         localStorage.removeItem('token')
-//         localStorage.removeItem('user')
-//         set({ user: null, isAuthenticated: false})
-//     }

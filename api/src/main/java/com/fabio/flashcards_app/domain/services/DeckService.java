@@ -39,13 +39,7 @@ public class DeckService {
     }
 
     public DeckResponseDTO getDeckById(Long id, User user) {
-        Deck deck = deckRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Deck not found"));
-
-        if(!deck.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Deck is not owner of user");
-        }
-
+        Deck deck = findAndValidate(id, user);
         return toDTO(deck);
     }
 

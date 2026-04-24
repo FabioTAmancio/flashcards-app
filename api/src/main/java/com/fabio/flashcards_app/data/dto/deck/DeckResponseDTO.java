@@ -9,5 +9,5 @@ public record DeckResponseDTO(
         Boolean isPublic,
         Boolean reviewEnabled,
         Integer cardCount
-) {
-}
+) {}
+

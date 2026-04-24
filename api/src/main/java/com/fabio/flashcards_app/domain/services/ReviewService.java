@@ -23,7 +23,6 @@ public class ReviewService {
     @Autowired
     private FlashcardService flashcardService;
 
-    // getDueFlashcards
     public List<FlashcardResponseDTO> getDueFlashcards(User user, Long deckId) {
         LocalDateTime now = LocalDateTime.now();
 

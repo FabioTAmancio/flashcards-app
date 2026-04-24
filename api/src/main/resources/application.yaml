@@ -41,7 +41,7 @@ app:
 api:
   security:
     token:
-      #secret: ${JWT_SECRET}
+      secret: ${JWT_SECRET}
       #secret: ${JWT_SECRET:default-secret-dev}
 logging:
   level:

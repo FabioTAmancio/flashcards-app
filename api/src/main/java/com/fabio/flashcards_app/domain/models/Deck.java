@@ -28,6 +28,9 @@ public class Deck {
     @Column(name = "is_public")
     private Boolean isPublic = false;
 
+    @Column(name = "review_enabled")
+    private Boolean reviewEnabled = true;
+
     @ManyToOne(optional = false)
     @JoinColumn(name = "user_id")
     private User user;

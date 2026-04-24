@@ -18,6 +18,15 @@ public class ReviewController {
     @Autowired
     private ReviewService reviewService;
 
+
+    @GetMapping("/due")
+    public ResponseEntity<List<FlashcardResponseDTO>> getDue(
+            @RequestParam(required = false) Long deckId,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(reviewService.getDueFlashcards(user, deckId));
+    }
+
     @PostMapping("/{flashcardId}")
     public ResponseEntity<Void> review(
             @PathVariable Long flashcardId,
@@ -28,10 +37,4 @@ public class ReviewController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/due")
-    public ResponseEntity<List<FlashcardResponseDTO>> getDue(
-            @AuthenticationPrincipal User user
-    ) {
-        return ResponseEntity.ok(reviewService.getDueFlashcards(user));
-    }
 }

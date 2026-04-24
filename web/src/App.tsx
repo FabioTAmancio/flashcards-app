@@ -1,31 +1,31 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
-import ReviewPage from "./pages/ReviewPage"
-import LoginPage from "./pages/LoginPage"
-import DecksPage from "./pages/DecksPage"
-import FlashcardsPage from "./pages/FlashcardPage"
-import ImportPage from "./pages/ImportPage"
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import PrivateRoute from './components/PrivateRoute'
+import LoginPage from './pages/LoginPage'
+import DecksPage from './pages/DecksPage'
+import FlashcardsPage from './pages/FlashcardPage'
+import ReviewPage from './pages/ReviewPage'
+import ImportPage from './pages/ImportPage'
+import StatsPage from './pages/StatsPage'
 
 function App() {
-  return (<BrowserRouter>
-    <Routes>
+  return (
+    <BrowserRouter>
+      <Routes>
+        {/* Public */}
+        <Route path="/login" element={<LoginPage />} />
 
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/" element={<Navigate to="/decks" replace />} />
+        {/* Private -> redirect to login if doesnt have auth */}
+        <Route path="/" element={<PrivateRoute><Navigate to="/decks" replace /></PrivateRoute>} />
+        <Route path="/decks" element={<PrivateRoute><DecksPage /></PrivateRoute>} />
+        <Route path="/decks/:deckId" element={<PrivateRoute><FlashcardsPage /></PrivateRoute>} />
+        <Route path="/review" element={<PrivateRoute><ReviewPage /></PrivateRoute>} />
+        <Route path="/import" element={<PrivateRoute><ImportPage /></PrivateRoute>} />
+        <Route path="/stats" element={<PrivateRoute><StatsPage /></PrivateRoute>} />
 
-      <Route path="/decks" element={
-         <DecksPage />
-        } />
-        <Route path="/decks/:deckId" element={
-          <FlashcardsPage />
-        } />
-        <Route path="/review" element={
-          <ReviewPage />
-        } />
-        <Route path="/import" element={
-          <ImportPage />
-        } />
+        {/* Any unknown route -> root (which redirects according to auth) */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-  </BrowserRouter>
+    </BrowserRouter>
   )
 }
 

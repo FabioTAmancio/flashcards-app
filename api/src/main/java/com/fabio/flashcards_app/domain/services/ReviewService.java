@@ -23,6 +23,21 @@ public class ReviewService {
     @Autowired
     private FlashcardService flashcardService;
 
+    // getDueFlashcards
+    public List<FlashcardResponseDTO> getDueFlashcards(User user, Long deckId) {
+        LocalDateTime now = LocalDateTime.now();
+
+        List<FlashcardProgress> due = deckId != null
+                ? progressRepository.findDueForUserAndDeck(user, now, deckId)
+                : progressRepository.findDueForUser(user, now);
+
+        return due.stream()
+                .map(FlashcardProgress::getFlashcard)
+                .map(flashcardService::toDTO)
+                .toList();
+    }
+
+    // reviewFlascards (SM-2)
     public void reviewFlashcard(Long flashcardId, User user, int quality) {
 
         FlashcardProgress progress = progressRepository.findByUserIdAndFlashcardId(user.getId(), flashcardId)

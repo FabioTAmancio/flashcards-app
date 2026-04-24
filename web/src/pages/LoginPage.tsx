@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { authService } from '../services/auth.service'
 import { useAuthStore } from '../store/auth.store'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Navigate} from 'react-router-dom'
+
  
 export default function LoginPage() {
   const [tab, setTab] = useState<'login' | 'register'>('login')
@@ -12,7 +13,12 @@ export default function LoginPage() {
   const [error, setError] = useState('')
  
   const setUser = useAuthStore((s) => s.setUser)
+
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const navigate = useNavigate()
+
+  if (isAuthenticated) return <Navigate to="/decks" replace />
+
  
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

@@ -23,6 +23,7 @@ public class DeckService {
         deck.setColor(dto.color());
         deck.setSubject(dto.subject());
         deck.setIsPublic(dto.isPublic() != null ? dto.isPublic() : false);
+        deck.setReviewEnabled(dto.reviewEnabled() != null ? dto.reviewEnabled() : true);
         deck.setUser(user);
 
         deckRepository.save(deck);
@@ -60,10 +61,19 @@ public class DeckService {
         deck.setDescription(dto.description());
         deck.setColor(dto.color());
         deck.setSubject(dto.subject());
-        deck.setIsPublic(dto.isPublic());
+        deck.setIsPublic(dto.isPublic() != null ? dto.isPublic() : false);
+        if (dto.reviewEnabled() != null) deck.setReviewEnabled(dto.reviewEnabled());
 
         deckRepository.save(deck);
 
+        return toDTO(deck);
+    }
+
+    // PATCH /deck/{id}/toggle-review = on/off deck to review
+    public DeckResponseDTO toggleReview(Long id, User user) {
+        Deck deck = findAndValidate(id, user);
+        deck.setReviewEnabled(!Boolean.TRUE.equals(deck.getReviewEnabled()));
+        deckRepository.save(deck);
         return toDTO(deck);
     }
 
@@ -78,14 +88,28 @@ public class DeckService {
         deckRepository.delete(deck);
     }
 
+    // HELPERS
+
+    private Deck findAndValidate(Long id, User user) {
+        Deck deck = deckRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Deck not found"));
+        if(!deck.getUser().getId().equals(user.getId())) {
+            throw new RuntimeException("Deck is not owner of user");
+        }
+        return deck;
+    }
+
     private DeckResponseDTO toDTO(Deck deck) {
+        int cardCount = deck.getFlashcards() != null ? deck.getFlashcards().size() : 0;
         return new DeckResponseDTO(
                 deck.getId(),
                 deck.getName(),
                 deck.getDescription(),
                 deck.getColor(),
                 deck.getSubject(),
-                deck.getIsPublic()
+                deck.getIsPublic(),
+                Boolean.TRUE.equals(deck.getReviewEnabled()),
+                cardCount
         );
     }
 

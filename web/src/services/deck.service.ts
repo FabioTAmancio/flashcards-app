@@ -14,6 +14,10 @@ export const deckService = {
         const { data } = await api.put(`/decks/${id}`, { name, description })
         return data
     },
+    toggleReview: async (id: number) => {
+        const { data } = await api.patch(`/decks/${id}/toggle-review`)
+        return data
+    },
     delete: async (id: number) => {
         await api.delete(`/decks/${id}`)
     },
@@ -41,11 +45,20 @@ export const flashcardService = {
 }
 
 export const reviewService = {
-  getDueFlashcards: async () => {
-    const { data } = await api.get('/review/due')
+    // if deckId = undefined -> all decks enabled
+  getDueFlashcards: async (deckId?: number) => {
+    const params = deckId ? { deckId } : {}
+    const { data } = await api.get('/review/due', { params })
     return data
   },
   review: async (flashcardId: number, quality: number) => {
     await api.post(`/review/${flashcardId}`, { quality })
   }
+}
+
+export const statsService =  {
+    get: async () => {
+        const { data } = await api.get('stats')
+        return data
+    }
 }

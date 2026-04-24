@@ -13,7 +13,7 @@ type Deck = {
 
 const PALETTE = ['var(--accent)', 'var(--green)', 'var(--orange)', 'var(--blue)', '#f59e0b', '#ec4899']
 
-// Toggle review
+// ── Toggle de revisão ──────────────────────────────────────────────────────
 
 function ReviewToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
   const [hover, setHover] = useState(false)
@@ -63,7 +63,7 @@ function ReviewToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () =>
   )
 }
 
-// DeckCard
+// ── DeckCard ───────────────────────────────────────────────────────────────
 
 function DeckCard({
   deck, onEdit, onDelete, onToggleReview,
@@ -98,7 +98,7 @@ function DeckCard({
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      {/* color bar on top */}
+      {/* barra colorida no topo */}
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 2,
         background: deck.reviewEnabled ? color : 'var(--border2)',
@@ -106,7 +106,7 @@ function DeckCard({
         transition: 'background 0.3s',
       }} />
 
-      {/* icon + toggle */}
+      {/* ícone + toggle */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
         <div style={{
           width: 40, height: 40, borderRadius: 10,
@@ -121,7 +121,7 @@ function DeckCard({
         />
       </div>
 
-      {/* name + description */}
+      {/* nome + descrição */}
       <div
         onClick={() => navigate(`/decks/${deck.id}`)}
         style={{ cursor: 'pointer' }}
@@ -142,7 +142,7 @@ function DeckCard({
         )}
       </div>
 
-      {/* buttons */}
+      {/* botões */}
       <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
         <button
           onClick={e => { e.stopPropagation(); navigate(`/decks/${deck.id}`) }}
@@ -191,7 +191,7 @@ function DeckCard({
   )
 }
 
-// Modal create/edit
+// ── Modal criar/editar ─────────────────────────────────────────────────────
 
 function DeckModal({ deck, onClose, onSave }: {
   deck?: Deck
@@ -292,7 +292,7 @@ function DeckModal({ deck, onClose, onSave }: {
   )
 }
 
-// Page
+// ── Page ───────────────────────────────────────────────────────────────────
 
 export default function DecksPage() {
   const [decks, setDecks] = useState<Deck[]>([])
@@ -326,15 +326,14 @@ export default function DecksPage() {
   }
 
   async function handleToggleReview(id: number) {
-    // Optimistic update
-    setDecks(prev =>
-      prev.map(d => d.id === id ? { ...d, reviewEnabled: !d.reviewEnabled } : d)
-    )
     try {
-      await deckService.toggleReview(id)
+      const updated = await deckService.toggleReview(id)
+      // Usa o valor confirmado pelo backend como fonte da verdade
+      setDecks(prev =>
+        prev.map(d => d.id === id ? { ...d, reviewEnabled: updated.reviewEnabled } : d)
+      )
     } catch {
-      // if fail revert
-      load()
+      console.error('Erro ao alterar status de revisão')
     }
   }
 

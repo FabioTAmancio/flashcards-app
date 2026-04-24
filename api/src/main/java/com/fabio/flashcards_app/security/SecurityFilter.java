@@ -54,7 +54,7 @@ public class SecurityFilter extends OncePerRequestFilter {
 
             UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
-                        user, // 🔥 AQUI ESTÁ A CORREÇÃO
+                        user,
                         null,
                         List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole()))
                 );

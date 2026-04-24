@@ -52,6 +52,15 @@ public class DeckController {
         return ResponseEntity.ok(deckService.updateDeck(id, dto, user));
     }
 
+    // turn on/off deck to show in reviewpage
+    @PatchMapping("/{id}/toggle-review")
+    public ResponseEntity<DeckResponseDTO> toggleReview(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(deckService.toggleReview(id, user));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable Long id,

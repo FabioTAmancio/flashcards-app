@@ -6,6 +6,7 @@ const NAV = [
   { to: '/decks', label: 'Decks', icon: '▦' },
   { to: '/review', label: 'Review', icon: '◎' },
   { to: '/import', label: 'Import', icon: '↑' },
+  { to: '/stats', label: 'Stats', icon: '◈' },
 ]
 
 export default function Navbar() {

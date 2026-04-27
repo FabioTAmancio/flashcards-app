@@ -2,13 +2,12 @@ spring:
   application:
     name: api
   datasource:
-    #url: jdbc:postgresql://localhost:5432/flashcards_app
+    #rl: jdbc:postgresql://localhost:5432/flashcards_app
     #username: postgres
     #password: admin
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-
 
   jpa:
     hibernate:
@@ -35,14 +34,24 @@ server:
   port: ${PORT:8080}
 
 app:
+  base-url: ${BASE_URL}
+  #base-url: http://localhost:8080
   frontend:
     url: ${FRONTEND_URL}
+    #url: "https://localhost:5173"
 
 api:
   security:
     token:
       secret: ${JWT_SECRET}
       #secret: ${JWT_SECRET:default-secret-dev}
+
 logging:
   level:
     root: INFO
+
+resend:
+  api-key: ${API_KEY}
+  #api-key: re_NZLL9VQz_J4HdfYYuEV8w9yg7f4GwMbr8
+  from: noreplay@updates.fabiotrindade.com.br
+

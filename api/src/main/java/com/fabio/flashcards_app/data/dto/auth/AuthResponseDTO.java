@@ -4,6 +4,7 @@ public record AuthResponseDTO(
         String token,
         String name,
         String email,
-        String role
+        String role,
+        Boolean emailVerified
 ) {
 }

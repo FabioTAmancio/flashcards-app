@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Setter
@@ -27,6 +28,15 @@ public class User {
 
     @Column(nullable = false)
     private String role = "USER"; //USER OR ADMIN for future
+
+    @Column(name = "email_verified", nullable = false)
+    private Boolean emailVerified = false;
+
+    @Column(name = "verification_token")
+    private String verificationToken;
+
+    @Column(name = "token_expires_at")
+    private LocalDateTime tokeExpiresAt;
 
     @OneToMany(mappedBy = "user")
     private List<Deck> decks;

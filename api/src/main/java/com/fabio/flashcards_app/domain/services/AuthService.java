@@ -10,6 +10,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 @Service
 public class AuthService {
 
@@ -22,10 +25,15 @@ public class AuthService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private EmailService emailService;
+
     public AuthResponseDTO register(RegisterDTO dto) {
         if(userRepository.findByEmail(dto.email()).isPresent()) {
             throw new RuntimeException("Email already in use");
         }
+
+        String token = UUID.randomUUID().toString();
 
         User user = new User();
         user.setName(dto.name());
@@ -33,16 +41,16 @@ public class AuthService {
         // Hash BCrypt before save
         user.setPassword(passwordEncoder.encode(dto.password()));
         user.setRole("USER");
+        user.setEmailVerified(false);
+        user.setVerificationToken(token);
+        user.setTokeExpiresAt(LocalDateTime.now().plusHours(24));
 
         userRepository.save(user);
 
-        String token = jwtService.generateToken(user);
-        return new AuthResponseDTO(
-                token,
-                user.getName(),
-                user.getEmail(),
-                user.getRole()
-        );
+        emailService.sendVerificationEmail(user.getEmail(), user.getName(), token);
+
+        String jwt = jwtService.generateToken(user);
+        return toDTO(user, jwt);
     }
 
     public AuthResponseDTO login(LoginDTO dto) {
@@ -54,13 +62,47 @@ public class AuthService {
             throw new RuntimeException("Wrong password");
         }
 
-        String token = jwtService.generateToken(user);
+        String jwt = jwtService.generateToken(user);
+        return toDTO(user, jwt);
+    }
 
+    public void verifyEmail(String token) {
+        User user = userRepository.findByVerificationToken(token)
+                .orElseThrow(() -> new RuntimeException("Token not found or invalid"));
+
+        if(user.getTokeExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Token expired");
+        }
+
+        user.setEmailVerified(true);
+        user.setVerificationToken(null);
+        user.setTokeExpiresAt(null);
+        userRepository.save(user);
+    }
+
+    public void resendVerification(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Email not found"));
+
+        if(Boolean.TRUE.equals(user.getEmailVerified())) {
+            throw new RuntimeException("Email already verified");
+        }
+
+        String token = UUID.randomUUID().toString();
+        user.setVerificationToken(token);
+        user.setTokeExpiresAt(LocalDateTime.now().plusHours(24));
+        userRepository.save(user);
+
+        emailService.sendVerificationEmail(user.getEmail(), user.getName(), token);
+    }
+
+    private AuthResponseDTO toDTO(User user, String jwt) {
         return new AuthResponseDTO(
-                token,
+                jwt,
                 user.getName(),
                 user.getEmail(),
-                user.getRole()
+                user.getRole(),
+                user.getEmailVerified()
         );
     }
 }

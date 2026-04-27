@@ -7,13 +7,14 @@ type Deck = {
   id: number
   name: string
   description: string
+  color: string | null
   reviewEnabled: boolean
   cardCount?: number
 }
 
 const PALETTE = ['var(--accent)', 'var(--green)', 'var(--orange)', 'var(--blue)', '#f59e0b', '#ec4899']
 
-// ── Toggle de revisão ──────────────────────────────────────────────────────
+// Review Toggle
 
 function ReviewToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
   const [hover, setHover] = useState(false)
@@ -63,7 +64,7 @@ function ReviewToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () =>
   )
 }
 
-// ── DeckCard ───────────────────────────────────────────────────────────────
+// DeckCard
 
 function DeckCard({
   deck, onEdit, onDelete, onToggleReview,
@@ -74,7 +75,7 @@ function DeckCard({
   onToggleReview: (id: number) => void
 }) {
   const navigate = useNavigate()
-  const color = PALETTE[deck.id % PALETTE.length]
+  const color = deck.color || PALETTE[deck.id % PALETTE.length]
   const [hover, setHover] = useState(false)
 
   return (
@@ -106,7 +107,7 @@ function DeckCard({
         transition: 'background 0.3s',
       }} />
 
-      {/* ícone + toggle */}
+      {/* icon + toggle */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
         <div style={{
           width: 40, height: 40, borderRadius: 10,
@@ -121,7 +122,7 @@ function DeckCard({
         />
       </div>
 
-      {/* nome + descrição */}
+      {/* name + description */}
       <div
         onClick={() => navigate(`/decks/${deck.id}`)}
         style={{ cursor: 'pointer' }}
@@ -142,7 +143,7 @@ function DeckCard({
         )}
       </div>
 
-      {/* botões */}
+      {/* button */}
       <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
         <button
           onClick={e => { e.stopPropagation(); navigate(`/decks/${deck.id}`) }}
@@ -191,22 +192,44 @@ function DeckCard({
   )
 }
 
-// ── Modal criar/editar ─────────────────────────────────────────────────────
+// Modal criar/editar
+
+const COLORS = [
+  '#aa3bff', '#22d3a5', '#ff8c42', '#60a5fa',
+  '#f59e0b', '#ec4899', '#ef4444', '#8b5cf6',
+]
+
+function ColorDot({ color, selected, onClick }: { color: string; selected: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        width: 28, height: 28, borderRadius: '50%',
+        background: color, border: selected ? '3px solid var(--text-h)' : '2px solid transparent',
+        cursor: 'pointer', outline: 'none',
+        boxShadow: selected ? `0 0 0 2px var(--bg), 0 0 0 4px ${color}` : 'none',
+        transition: 'all 0.15s', flexShrink: 0,
+      }}
+    />
+  )
+}
 
 function DeckModal({ deck, onClose, onSave }: {
   deck?: Deck
   onClose: () => void
-  onSave: (name: string, desc: string) => Promise<void>
+  onSave: (name: string, desc: string, color: string) => Promise<void>
 }) {
   const [name, setName] = useState(deck?.name || '')
   const [desc, setDesc] = useState(deck?.description || '')
+  const [color, setColor] = useState(deck?.color || COLORS[0])
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) return
     setLoading(true)
-    await onSave(name.trim(), desc.trim())
+    await onSave(name.trim(), desc.trim(), color)
     setLoading(false)
   }
 
@@ -267,6 +290,15 @@ function DeckModal({ deck, onClose, onSave }: {
             />
           </div>
 
+          <div>
+            <label style={labelStyle}>Cor</label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+              {COLORS.map(c => (
+                <ColorDot key={c} color={c} selected={color === c} onClick={() => setColor(c)} />
+              ))}
+            </div>
+          </div>
+
           <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
             <button type="button" onClick={onClose} style={{
               flex: 1, padding: '10px',
@@ -292,7 +324,7 @@ function DeckModal({ deck, onClose, onSave }: {
   )
 }
 
-// ── Page ───────────────────────────────────────────────────────────────────
+// Page
 
 export default function DecksPage() {
   const [decks, setDecks] = useState<Deck[]>([])
@@ -309,11 +341,11 @@ export default function DecksPage() {
 
   useEffect(() => { load() }, [])
 
-  async function handleSave(name: string, desc: string) {
+  async function handleSave(name: string, desc: string, color: string) {
     if (modal === 'create') {
-      await deckService.create(name, desc)
+      await deckService.create(name, desc, color)
     } else if (modal && typeof modal !== 'string') {
-      await deckService.update(modal.id, name, desc)
+      await deckService.update(modal.id, name, desc, color)
     }
     setModal(null)
     load()

@@ -2,12 +2,12 @@ spring:
   application:
     name: api
   datasource:
-    #rl: jdbc:postgresql://localhost:5432/flashcards_app
+    #url: jdbc:postgresql://localhost:5432/flashcards_app
     #username: postgres
     #password: admin
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: ${DATABASE_URL}
+    username: ${PGUSER}
+    password: ${PGPASSWORD}
 
   jpa:
     hibernate:

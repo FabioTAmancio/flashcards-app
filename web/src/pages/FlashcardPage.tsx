@@ -9,8 +9,7 @@ type Card = {
 }
 type Deck = { id: number; name: string; description: string }
 
-// ── Componente de upload/URL de imagem ────────────────────────────────────────
-
+//Componente de upload/URL de imagem 
 function ImageInput({ label, value, onChange }: {
   label: string
   value: string
@@ -86,6 +85,16 @@ function ImageInput({ label, value, onChange }: {
           >
             {uploading ? 'Enviando...' : value ? '✓ Imagem carregada — clique para trocar' : '+ Clique para selecionar imagem'}
           </button>
+          {uploadError && (
+            <div style={{
+              marginTop: 6, padding: '6px 10px',
+              background: 'rgba(239,68,68,0.08)',
+              border: '1px solid rgba(239,68,68,0.2)',
+              borderRadius: 7, fontSize: 12, color: '#f87171',
+            }}>
+              ⚠ {uploadError}
+            </div>
+          )}
         </div>
       ) : (
         <input

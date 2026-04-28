@@ -23,6 +23,7 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+    sql-migration-suffixes: .sql
 
 springdoc:
   api-docs:

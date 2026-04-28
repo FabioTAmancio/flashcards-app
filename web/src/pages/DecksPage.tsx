@@ -99,7 +99,7 @@ function DeckCard({
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      {/* barra colorida no topo */}
+      {/* color bar on the top */}
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 2,
         background: deck.reviewEnabled ? color : 'var(--border2)',
@@ -192,7 +192,7 @@ function DeckCard({
   )
 }
 
-// Modal criar/editar
+// Modal create/edit
 
 const COLORS = [
   '#aa3bff', '#22d3a5', '#ff8c42', '#60a5fa',

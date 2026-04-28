@@ -38,7 +38,7 @@ app:
   #base-url: http://localhost:8080
   frontend:
     url: ${FRONTEND_URL}
-    #url: "https://localhost:5173"
+    #url: "http://localhost:5173"
 
 api:
   security:
@@ -51,7 +51,15 @@ logging:
     root: INFO
 
 resend:
-  api-key: ${API_KEY}
+  api-key: ${RESEND_API_KEY}
   #api-key: re_NZLL9VQz_J4HdfYYuEV8w9yg7f4GwMbr8
   from: noreplay@updates.fabiotrindade.com.br
+
+cloudinary:
+  cloudname: ${CLOUD_NAME}
+  api-key: ${CLOUD_API_KEY}
+  api-secret: ${CLOUD_API_SECRET}
+  #cloudname: dckgejjyk
+  #api-key: "391144798897956"
+  #api-secret: "_TrEGtdv6KkKwdQlleoPtkYH518"
 

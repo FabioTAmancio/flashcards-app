@@ -4,6 +4,8 @@ public record FlashcardRequestDTO(
         String front,
         String back,
         String subject,
-        Long deckId
+        Long deckId,
+        String frontImageUrl,
+        String backImageUrl
 ) {
 }

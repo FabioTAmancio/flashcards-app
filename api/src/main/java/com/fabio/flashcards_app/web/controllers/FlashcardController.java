@@ -1,8 +1,6 @@
 package com.fabio.flashcards_app.web.controllers;
 
-import com.fabio.flashcards_app.data.dto.flashcard.FlashcardImportRequestDTO;
-import com.fabio.flashcards_app.data.dto.flashcard.FlashcardRequestDTO;
-import com.fabio.flashcards_app.data.dto.flashcard.FlashcardResponseDTO;
+import com.fabio.flashcards_app.data.dto.flashcard.*;
 import com.fabio.flashcards_app.domain.models.User;
 import com.fabio.flashcards_app.domain.services.FlashcardService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +17,7 @@ public class FlashcardController {
     @Autowired
     private FlashcardService service;
 
-    //create inside a deck
+
     @PostMapping()
     public ResponseEntity<FlashcardResponseDTO> create(
             @RequestBody FlashcardRequestDTO dto,
@@ -28,15 +26,15 @@ public class FlashcardController {
         return ResponseEntity.status(201).body(service.create(dto.deckId(), dto, user));
     }
 
-    //create all flashcards import to a one deck
+    //import
     @PostMapping("/import/{deckId}")
-    public ResponseEntity<?> importFlashcards(
+    public ResponseEntity<FlashcardImportResultDTO> importFlashcards(
             @PathVariable Long deckId,
-            @RequestBody List<FlashcardImportRequestDTO> dtos,
+            @RequestBody List<FlashcardImportItemDTO> dtos,
             @AuthenticationPrincipal User user
     ) {
-        service.importFlashcards(deckId, dtos, user);
-        return ResponseEntity.ok().build();
+        FlashcardImportDTO importDTO = new FlashcardImportDTO(deckId, dtos);
+        return ResponseEntity.ok(service.importCards(importDTO, user));
     }
 
     // list by deck
@@ -73,7 +71,7 @@ public class FlashcardController {
             @AuthenticationPrincipal User user
     ) {
         service.delete(id, user);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
 

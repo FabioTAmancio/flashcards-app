@@ -6,9 +6,9 @@ export default function EmailBanner() {
   const user = useAuthStore(s => s.user)
   const [sent, setSent] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
 
-  // Só mostra se o user existe e não verificou o email
-  if (!user || user.emailVerified) return null
+  if (!user || user.emailVerified || dismissed) return null
 
   async function handleResend() {
     setLoading(true)
@@ -33,6 +33,7 @@ export default function EmailBanner() {
       <span style={{ fontSize: 13, color: '#fbbf24' }}>
         ⚠️ Confirme seu email para garantir acesso à sua conta.
       </span>
+
       {sent ? (
         <span style={{ fontSize: 12, color: '#4ade80' }}>✓ Email reenviado!</span>
       ) : (
@@ -51,6 +52,24 @@ export default function EmailBanner() {
           {loading ? 'Enviando...' : 'Reenviar email'}
         </button>
       )}
+
+      {/* Close button */}
+      <button
+        onClick={() => setDismissed(true)}
+        title="Fechar"
+        style={{
+          position: 'absolute', right: 16,
+          background: 'none', border: 'none',
+          color: '#fbbf24', opacity: 0.6,
+          fontSize: 16, cursor: 'pointer',
+          lineHeight: 1, padding: '2px 6px',
+          transition: 'opacity 0.15s',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+        onMouseLeave={e => (e.currentTarget.style.opacity = '0.6')}
+      >
+        ✕
+      </button>
     </div>
   )
 }

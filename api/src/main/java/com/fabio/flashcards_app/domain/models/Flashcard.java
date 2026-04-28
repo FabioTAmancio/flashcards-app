@@ -31,6 +31,9 @@ public class Flashcard {
     @Column(nullable = false)
     private String subject;
 
+    @Column(name = "front_image_url")
+    private String frontImageUrl;
 
-
+    @Column(name = "back_image_url")
+    private String backImageUrl;
 }

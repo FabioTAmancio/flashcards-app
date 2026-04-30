@@ -120,14 +120,12 @@ public class StatsService {
         int longest = 0;
         int temp    = 0;
 
-        // Current streak: conta para tras a partir de hoje
         LocalDate cursor = today;
         while (daysWithReview.contains(cursor)) {
             current++;
             cursor = cursor.minusDays(1);
         }
 
-        // Longest streak: percorre todos os dias registrados
         if (!daysWithReview.isEmpty()) {
             LocalDate min = daysWithReview.stream().min(Comparator.naturalOrder()).get();
             cursor = min;

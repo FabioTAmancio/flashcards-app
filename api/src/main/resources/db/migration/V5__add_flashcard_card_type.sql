@@ -1,0 +1,2 @@
+ALTER TABLE flashcards
+    ADD COLUMN card_type VARCHAR(20) NOT NULL DEFAULT 'BASIC';

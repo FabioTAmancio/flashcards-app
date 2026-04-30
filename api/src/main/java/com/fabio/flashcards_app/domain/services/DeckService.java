@@ -82,8 +82,7 @@ public class DeckService {
         deckRepository.delete(deck);
     }
 
-    // HELPERS
-
+    // Ajudadores
     private Deck findAndValidate(Long id, User user) {
         Deck deck = deckRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Deck not found"));

@@ -9,7 +9,6 @@ import com.fabio.flashcards_app.domain.repositories.FlashcardProgressRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,7 +62,7 @@ public class ReviewService {
         if(status == CardStatus.LEARNING) {
             if(quality < 3) {
                 //fail -> return to start point of learn
-                progress.setNextReview(now.plusMinutes(5));
+                progress.setNextReview(now.plusMinutes(3));
             } else {
                 // correct -> turn REVIEW
                 progress.setStatus(CardStatus.REVIEW);
@@ -85,7 +84,7 @@ public class ReviewService {
                 progress.setStatus(CardStatus.LEARNING);
                 progress.setRepetitions(0);
                 progress.setInterval(1);
-                progress.setNextReview(now.plusMinutes(10));
+                progress.setNextReview(now.plusMinutes(6));
             } else {
 
                 repetitions++;

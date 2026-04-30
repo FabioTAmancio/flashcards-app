@@ -27,8 +27,6 @@ export const imageService = {
   upload: async (file: File): Promise<string> => {
     const form = new FormData()
     form.append('file', file)
-    // Não definir Content-Type manualmente — o Axios detecta FormData
-    // e adiciona o boundary correto automaticamente, sem perder o Authorization
     const { data } = await api.post('/images/upload', form)
     return data.url
   },
@@ -39,15 +37,15 @@ export const flashcardService = {
     const { data } = await api.get(`/flashcards/deck/${deckId}`)
     return data
   },
-  create: async (deckId: number, front: string, back: string, subject: string, frontImageUrl?: string, backImageUrl?: string) => {
-    const { data } = await api.post('/flashcards', { deckId, front, back, subject, frontImageUrl, backImageUrl })
-    return data
-  },
+  create: async (deckId: number, front: string, back: string, subject: string, frontImageUrl?: string, backImageUrl?: string, cardType?: string) => {
+      const { data } = await api.post('/flashcards', { deckId, front, back, subject, frontImageUrl, backImageUrl, cardType })
+      return data
+    },
   import: async (deckId: number, front: string, back: string, subject: string) => {
     await api.post(`/flashcards/import/${deckId}`, { front, back, subject })
   },
-  update: async (id: number, front: string, back: string, subject: string, frontImageUrl?: string, backImageUrl?: string) => {
-    const { data } = await api.put(`/flashcards/${id}`, { front, back, subject, frontImageUrl, backImageUrl })
+  update: async (id: number, front: string, back: string, subject: string, frontImageUrl?: string, backImageUrl?: string, cardType?: string) => {
+    const { data } = await api.put(`/flashcards/${id}`, { front, back, subject, frontImageUrl, backImageUrl, cardType })
     return data
   },
   delete: async (id: number) => {

@@ -6,6 +6,7 @@ public record FlashcardRequestDTO(
         String subject,
         Long deckId,
         String frontImageUrl,
-        String backImageUrl
+        String backImageUrl,
+        String cardType // "BASIC" or "QA" - null use BASIC as default
 ) {
 }

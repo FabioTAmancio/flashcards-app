@@ -7,6 +7,7 @@ public record FlashcardResponseDTO(
         String subject,
         Long deckId,
         String frontImageUrl,
-        String backImageUrl
+        String backImageUrl,
+        String cardType
 ) {
 }

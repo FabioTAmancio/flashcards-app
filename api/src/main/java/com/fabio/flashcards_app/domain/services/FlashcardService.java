@@ -6,6 +6,7 @@ import com.fabio.flashcards_app.domain.models.Flashcard;
 import com.fabio.flashcards_app.domain.models.FlashcardProgress;
 import com.fabio.flashcards_app.domain.models.User;
 import com.fabio.flashcards_app.domain.models.enums.CardStatus;
+import com.fabio.flashcards_app.domain.models.enums.CardType;
 import com.fabio.flashcards_app.domain.repositories.DeckRepository;
 import com.fabio.flashcards_app.domain.repositories.FlashcardProgressRepository;
 import com.fabio.flashcards_app.domain.repositories.FlashcardRepository;
@@ -48,7 +49,7 @@ public class FlashcardService {
                 }
                 String subject = isBlank(item.subject()) ? deck.getName() : item.subject();
                 FlashcardRequestDTO req = new FlashcardRequestDTO(
-                        item.front(), item.back(), subject, dto.deckId(), null, null
+                        item.front(), item.back(), subject, dto.deckId(), null, null, "BASIC"
                 );
                 Flashcard f = buildAndSave(req, deck, user);
                 createProgressIfAbsent(user, f);
@@ -76,16 +77,18 @@ public class FlashcardService {
         f.setFront(dto.front());
         f.setBack(dto.back());
         f.setSubject(dto.subject());
-        // Atualiza imagens só se vieram no request
         if (dto.frontImageUrl() != null) f.setFrontImageUrl(dto.frontImageUrl());
         if (dto.backImageUrl() != null)  f.setBackImageUrl(dto.backImageUrl());
+        if (dto.cardType() != null) {
+            try { f.setCardType(CardType.valueOf(dto.cardType())); }
+            catch (IllegalArgumentException ignored) {}
+        }
         flashcardRepository.save(f);
         return toDTO(f);
     }
 
     public void delete(Long id, User user) {
         Flashcard f = findAndValidate(id, user);
-        // Deleta imagens do Cloudinary ao excluir o card
         cloudinaryService.delete(f.getFrontImageUrl());
         cloudinaryService.delete(f.getBackImageUrl());
         progressRepository.deleteByFlashcard(f);
@@ -119,6 +122,14 @@ public class FlashcardService {
         f.setUser(user);
         f.setFrontImageUrl(dto.frontImageUrl());
         f.setBackImageUrl(dto.backImageUrl());
+
+        CardType type = CardType.BASIC;
+        if (dto.cardType() != null) {
+            try { type = CardType.valueOf(dto.cardType()); }
+            catch (IllegalArgumentException ignored) {}
+        }
+        f.setCardType(type);
+
         return flashcardRepository.save(f);
     }
 
@@ -139,10 +150,10 @@ public class FlashcardService {
     public FlashcardResponseDTO toDTO(Flashcard f) {
         return new FlashcardResponseDTO(
                 f.getId(), f.getFront(), f.getBack(), f.getSubject(),
-                f.getDeck().getId(), f.getFrontImageUrl(), f.getBackImageUrl()
+                f.getDeck().getId(), f.getFrontImageUrl(), f.getBackImageUrl(),
+                f.getCardType().name()
         );
     }
 
     private static boolean isBlank(String s) { return s == null || s.isBlank(); }
 }
-

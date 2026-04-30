@@ -1,5 +1,6 @@
 package com.fabio.flashcards_app.domain.models;
 
+import com.fabio.flashcards_app.domain.models.enums.CardType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -36,4 +37,8 @@ public class Flashcard {
 
     @Column(name = "back_image_url")
     private String backImageUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "card_type", nullable = false)
+    private CardType cardType = CardType.BASIC;
 }

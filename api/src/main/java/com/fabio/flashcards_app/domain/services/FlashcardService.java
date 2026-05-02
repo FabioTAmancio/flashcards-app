@@ -1,6 +1,9 @@
 package com.fabio.flashcards_app.domain.services;
 
 import com.fabio.flashcards_app.data.dto.flashcard.*;
+import com.fabio.flashcards_app.data.dto.imports.FlashcardImportDTO;
+import com.fabio.flashcards_app.data.dto.imports.FlashcardImportItemDTO;
+import com.fabio.flashcards_app.data.dto.imports.FlashcardImportResultDTO;
 import com.fabio.flashcards_app.domain.models.Deck;
 import com.fabio.flashcards_app.domain.models.Flashcard;
 import com.fabio.flashcards_app.domain.models.FlashcardProgress;

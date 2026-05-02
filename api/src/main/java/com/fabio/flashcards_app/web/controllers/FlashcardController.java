@@ -1,6 +1,9 @@
 package com.fabio.flashcards_app.web.controllers;
 
 import com.fabio.flashcards_app.data.dto.flashcard.*;
+import com.fabio.flashcards_app.data.dto.imports.FlashcardImportDTO;
+import com.fabio.flashcards_app.data.dto.imports.FlashcardImportItemDTO;
+import com.fabio.flashcards_app.data.dto.imports.FlashcardImportResultDTO;
 import com.fabio.flashcards_app.domain.models.User;
 import com.fabio.flashcards_app.domain.services.FlashcardService;
 import org.springframework.beans.factory.annotation.Autowired;

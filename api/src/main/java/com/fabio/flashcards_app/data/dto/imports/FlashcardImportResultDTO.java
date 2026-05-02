@@ -1,4 +1,4 @@
-package com.fabio.flashcards_app.data.dto.flashcard;
+package com.fabio.flashcards_app.data.dto.imports;
 
 import java.util.List;
 

@@ -6,6 +6,7 @@ public record DeckRequestDTO(
         String color,
         String subject,
         Boolean isPublic,
-        Boolean reviewEnabled
+        Boolean reviewEnabled,
+        Long folderId
 ) {}
 

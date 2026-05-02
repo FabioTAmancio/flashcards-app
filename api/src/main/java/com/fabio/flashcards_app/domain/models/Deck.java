@@ -35,6 +35,10 @@ public class Deck {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @ManyToOne
+    @JoinColumn(name = "folder_id")
+    private Folder folder;
+
     @OneToMany(mappedBy = "deck", cascade = CascadeType.ALL)
     private List<Flashcard> flashcards;
 

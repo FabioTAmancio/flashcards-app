@@ -2,77 +2,57 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { deckService } from '../services/deck.service'
+import { folderService, type FolderItem, type DeckInFolder } from '../services/folder.service'
+
+// ── Tipos ─────────────────────────────────────────────────────────────────────
 
 type Deck = {
-  id: number
-  name: string
-  description: string
-  color: string | null
-  reviewEnabled: boolean
-  cardCount?: number
+  id: number; name: string; description: string
+  color: string | null; reviewEnabled: boolean
+  cardCount?: number; folderId?: number | null
 }
 
-const PALETTE = ['var(--accent)', 'var(--green)', 'var(--orange)', 'var(--blue)', '#f59e0b', '#ec4899']
+const PALETTE = ['var(--accent)', '#22d3a5', '#ff8c42', '#60a5fa', '#f59e0b', '#ec4899']
 
-// Review Toggle
+// ── Toggle de revisão ─────────────────────────────────────────────────────────
 
 function ReviewToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
-  const [hover, setHover] = useState(false)
   return (
     <button
       onClick={e => { e.stopPropagation(); onToggle() }}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      title={enabled ? 'Desabilitar para revisão' : 'Habilitar para revisão'}
+      title={enabled ? 'Desabilitar revisão' : 'Habilitar revisão'}
       style={{
-        display: 'flex', alignItems: 'center', gap: 6,
-        padding: '5px 10px',
-        background: enabled
-          ? 'rgba(34,211,165,0.08)'
-          : hover ? 'var(--surface2)' : 'transparent',
+        display: 'flex', alignItems: 'center', gap: 6, padding: '4px 9px',
+        background: enabled ? 'rgba(34,211,165,0.08)' : 'transparent',
         border: `1px solid ${enabled ? 'rgba(34,211,165,0.25)' : 'var(--border)'}`,
-        borderRadius: 99,
-        cursor: 'pointer',
-        transition: 'all 0.2s',
+        borderRadius: 99, cursor: 'pointer', transition: 'all 0.2s',
       }}
     >
-      {/* pill track */}
       <div style={{
-        width: 28, height: 16, borderRadius: 99, position: 'relative',
-        background: enabled ? 'var(--green)' : 'var(--border2)',
-        transition: 'background 0.2s',
-        flexShrink: 0,
+        width: 26, height: 14, borderRadius: 99, position: 'relative', flexShrink: 0,
+        background: enabled ? '#22d3a5' : 'var(--border)', transition: 'background 0.2s',
       }}>
         <div style={{
-          position: 'absolute', top: 2,
-          left: enabled ? 14 : 2,
-          width: 12, height: 12,
-          background: '#fff', borderRadius: '50%',
-          transition: 'left 0.2s',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+          position: 'absolute', top: 2, left: enabled ? 13 : 2,
+          width: 10, height: 10, background: '#fff', borderRadius: '50%',
+          transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
         }} />
       </div>
-      <span style={{
-        fontSize: 11, fontWeight: 500,
-        color: enabled ? 'var(--green)' : 'var(--text-muted)',
-        transition: 'color 0.2s',
-        whiteSpace: 'nowrap',
-      }}>
-        {enabled ? 'Revisão on' : 'Revisão off'}
+      <span style={{ fontSize: 10, fontWeight: 500, color: enabled ? '#22d3a5' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+        {enabled ? 'on' : 'off'}
       </span>
     </button>
   )
 }
 
-// DeckCard
+// ── DeckCard ──────────────────────────────────────────────────────────────────
 
-function DeckCard({
-  deck, onEdit, onDelete, onToggleReview,
-}: {
+function DeckCard({ deck, onEdit, onDelete, onToggleReview, onMoveToFolder }: {
   deck: Deck
-  onEdit: (d: Deck) => void
-  onDelete: (id: number) => void
-  onToggleReview: (id: number) => void
+  onEdit: () => void
+  onDelete: () => void
+  onToggleReview: () => void
+  onMoveToFolder: () => void
 }) {
   const navigate = useNavigate()
   const color = deck.color || PALETTE[deck.id % PALETTE.length]
@@ -81,292 +61,291 @@ function DeckCard({
   return (
     <div
       style={{
-        background: 'var(--surface)',
-        border: `1px solid ${hover ? 'var(--border2)' : 'var(--border)'}`,
-        borderRadius: 'var(--radius)',
-        padding: 24,
-        cursor: 'default',
-        transition: 'all 0.2s',
-        transform: hover ? 'translateY(-2px)' : 'none',
-        boxShadow: hover ? '0 8px 32px rgba(0,0,0,0.3)' : 'none',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12,
-        position: 'relative',
-        overflow: 'hidden',
+        background: 'var(--surface)', border: `1px solid ${hover ? 'var(--border2)' : 'var(--border)'}`,
+        borderRadius: 12, padding: 20,
+        cursor: 'default', transition: 'all 0.2s',
+        transform: hover ? 'translateY(-1px)' : 'none',
         opacity: deck.reviewEnabled ? 1 : 0.6,
+        position: 'relative', overflow: 'hidden',
+        display: 'flex', flexDirection: 'column', gap: 10,
       }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      {/* color bar on the top */}
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-        background: deck.reviewEnabled ? color : 'var(--border2)',
-        borderRadius: '16px 16px 0 0',
-        transition: 'background 0.3s',
+        background: deck.reviewEnabled ? color : 'var(--border)',
+        borderRadius: '12px 12px 0 0',
       }} />
 
-      {/* icon + toggle */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
         <div style={{
-          width: 40, height: 40, borderRadius: 10,
+          width: 36, height: 36, borderRadius: 9,
           background: `${color}18`, border: `1px solid ${color}30`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
-        }}>
-          ▦
-        </div>
-        <ReviewToggle
-          enabled={deck.reviewEnabled}
-          onToggle={() => onToggleReview(deck.id)}
-        />
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
+        }}>▦</div>
+        <ReviewToggle enabled={deck.reviewEnabled} onToggle={onToggleReview} />
       </div>
 
-      {/* name + description */}
-      <div
-        onClick={() => navigate(`/decks/${deck.id}`)}
-        style={{ cursor: 'pointer' }}
-      >
-        <div style={{
-          fontFamily: 'var(--font-display)', fontWeight: 700,
-          fontSize: 17, marginBottom: 4, letterSpacing: '-0.3px',
-        }}>
+      <div onClick={() => navigate(`/decks/${deck.id}`)} style={{ cursor: 'pointer' }}>
+        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 3, letterSpacing: '-0.2px' }}>
           {deck.name}
         </div>
-        <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>
           {deck.description || 'Sem descrição'}
         </div>
         {deck.cardCount !== undefined && (
-          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>
             {deck.cardCount} card{deck.cardCount !== 1 ? 's' : ''}
           </div>
         )}
       </div>
 
-      {/* button */}
-      <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-        <button
-          onClick={e => { e.stopPropagation(); navigate(`/decks/${deck.id}`) }}
-          style={{
-            flex: 1, padding: '7px 0',
-            background: 'var(--surface2)', border: '1px solid var(--border)',
-            borderRadius: 8, color: 'var(--text-muted)',
-            fontSize: 12, cursor: 'pointer',
-            fontFamily: 'var(--font-body)', transition: 'all 0.15s',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-        >
-          Ver cards
-        </button>
-        <button
-          onClick={e => { e.stopPropagation(); onEdit(deck) }}
-          style={{
-            padding: '7px 14px',
-            background: 'transparent', border: '1px solid var(--border)',
-            borderRadius: 8, color: 'var(--text-muted)',
-            fontSize: 12, cursor: 'pointer',
-            fontFamily: 'var(--font-body)', transition: 'all 0.15s',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-        >
-          ✎
-        </button>
-        <button
-          onClick={e => { e.stopPropagation(); onDelete(deck.id) }}
-          style={{
-            padding: '7px 14px',
-            background: 'transparent', border: '1px solid var(--border)',
-            borderRadius: 8, color: 'var(--red)',
-            fontSize: 12, cursor: 'pointer',
-            fontFamily: 'var(--font-body)', opacity: 0.6, transition: 'all 0.15s',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-          onMouseLeave={e => (e.currentTarget.style.opacity = '0.6')}
-        >
-          ✕
-        </button>
+      <div style={{ display: 'flex', gap: 6 }}>
+        <button onClick={() => navigate(`/decks/${deck.id}`)} style={{
+          flex: 1, padding: '6px 0',
+          background: 'var(--surface2)', border: '1px solid var(--border)',
+          borderRadius: 7, color: 'var(--text-muted)',
+          fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
+        }}>Ver cards</button>
+        <button onClick={e => { e.stopPropagation(); onMoveToFolder() }} title="Mover para pasta" style={{
+          padding: '6px 10px',
+          background: 'transparent', border: '1px solid var(--border)',
+          borderRadius: 7, color: 'var(--text-muted)',
+          fontSize: 12, cursor: 'pointer',
+        }}>📁</button>
+        <button onClick={e => { e.stopPropagation(); onEdit() }} style={{
+          padding: '6px 10px',
+          background: 'transparent', border: '1px solid var(--border)',
+          borderRadius: 7, color: 'var(--text-muted)',
+          fontSize: 12, cursor: 'pointer',
+        }}>✎</button>
+        <button onClick={e => { e.stopPropagation(); onDelete() }} style={{
+          padding: '6px 10px',
+          background: 'transparent', border: '1px solid var(--border)',
+          borderRadius: 7, color: 'var(--red)',
+          fontSize: 12, cursor: 'pointer', opacity: 0.7,
+        }}>✕</button>
       </div>
     </div>
   )
 }
 
-// Modal create/edit
+// ── FolderTree ────────────────────────────────────────────────────────────────
 
-const COLORS = [
-  '#aa3bff', '#22d3a5', '#ff8c42', '#60a5fa',
-  '#f59e0b', '#ec4899', '#ef4444', '#8b5cf6',
-]
-
-function ColorDot({ color, selected, onClick }: { color: string; selected: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        width: 28, height: 28, borderRadius: '50%',
-        background: color, border: selected ? '3px solid var(--text-h)' : '2px solid transparent',
-        cursor: 'pointer', outline: 'none',
-        boxShadow: selected ? `0 0 0 2px var(--bg), 0 0 0 4px ${color}` : 'none',
-        transition: 'all 0.15s', flexShrink: 0,
-      }}
-    />
-  )
-}
-
-function DeckModal({ deck, onClose, onSave }: {
-  deck?: Deck
-  onClose: () => void
-  onSave: (name: string, desc: string, color: string) => Promise<void>
+function FolderTree({ folders, selectedId, onSelect, level = 0 }: {
+  folders: FolderItem[]
+  selectedId: number | null
+  onSelect: (id: number | null) => void
+  level?: number
 }) {
-  const [name, setName] = useState(deck?.name || '')
-  const [desc, setDesc] = useState(deck?.description || '')
-  const [color, setColor] = useState(deck?.color || COLORS[0])
-  const [loading, setLoading] = useState(false)
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {folders.map(folder => (
+        <FolderNode
+          key={folder.id}
+          folder={folder}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          level={level}
+        />
+      ))}
+    </div>
+  )
+}
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!name.trim()) return
-    setLoading(true)
-    await onSave(name.trim(), desc.trim(), color)
-    setLoading(false)
-  }
-
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '10px 13px',
-    background: 'var(--surface2)', border: '1px solid var(--border)',
-    borderRadius: 9, color: 'var(--text)',
-    fontFamily: 'var(--font-body)', fontSize: 14, outline: 'none',
-    boxSizing: 'border-box',
-  }
-  const labelStyle: React.CSSProperties = {
-    display: 'block', fontSize: 11, fontWeight: 500,
-    color: 'var(--text-muted)', marginBottom: 6,
-    textTransform: 'uppercase', letterSpacing: '0.06em',
-  }
+function FolderNode({ folder, selectedId, onSelect, level }: {
+  folder: FolderItem
+  selectedId: number | null
+  onSelect: (id: number | null) => void
+  level: number
+}) {
+  const [open, setOpen] = useState(true)
+  const isSelected = selectedId === folder.id
+  const hasChildren = folder.children && folder.children.length > 0
 
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 200,
-        background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        animation: 'fadeIn 0.2s ease',
-      }}
-      onClick={onClose}
-    >
+    <div>
       <div
+        onClick={() => onSelect(folder.id)}
         style={{
-          background: 'var(--surface)', border: '1px solid var(--border2)',
-          borderRadius: 'var(--radius)', padding: 32,
-          width: '100%', maxWidth: 440,
-          animation: 'fadeUp 0.25s ease',
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '6px 10px',
+          paddingLeft: 10 + level * 16,
+          borderRadius: 8, cursor: 'pointer',
+          background: isSelected ? 'var(--accent-bg)' : 'transparent',
+          border: `1px solid ${isSelected ? 'var(--accent-border)' : 'transparent'}`,
+          transition: 'all 0.15s',
+          color: isSelected ? 'var(--accent)' : 'var(--text-muted)',
         }}
-        onClick={e => e.stopPropagation()}
       >
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, marginBottom: 24 }}>
-          {deck ? 'Editar Deck' : 'Novo Deck'}
-        </h2>
+        {hasChildren && (
+          <span
+            onClick={e => { e.stopPropagation(); setOpen(!open) }}
+            style={{ fontSize: 10, opacity: 0.6, flexShrink: 0, cursor: 'pointer' }}
+          >
+            {open ? '▾' : '▸'}
+          </span>
+        )}
+        {!hasChildren && <span style={{ width: 14, flexShrink: 0 }} />}
+        <span style={{ fontSize: 14 }}>📁</span>
+        <span style={{ fontSize: 13, fontWeight: isSelected ? 600 : 400, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {folder.name}
+        </span>
+        <span style={{ fontSize: 11, opacity: 0.4 }}>
+          {(folder.decks?.length || 0) + (folder.children?.length || 0)}
+        </span>
+      </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div>
-            <label style={labelStyle}>Nome</label>
-            <input
-              value={name} onChange={e => setName(e.target.value)}
-              placeholder="Ex: Inglês B2" required style={inputStyle}
-              onFocus={e => (e.target.style.borderColor = 'var(--accent-border)')}
-              onBlur={e => (e.target.style.borderColor = 'var(--border)')}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>Descrição</label>
-            <textarea
-              value={desc} onChange={e => setDesc(e.target.value)}
-              placeholder="Opcional..." rows={3}
-              style={{ ...inputStyle, resize: 'vertical' }}
-              onFocus={e => (e.target.style.borderColor = 'var(--accent-border)')}
-              onBlur={e => (e.target.style.borderColor = 'var(--border)')}
-            />
-          </div>
+      {open && hasChildren && (
+        <FolderTree
+          folders={folder.children}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          level={level + 1}
+        />
+      )}
+    </div>
+  )
+}
 
-          <div>
-            <label style={labelStyle}>Cor</label>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
-              {COLORS.map(c => (
-                <ColorDot key={c} color={c} selected={color === c} onClick={() => setColor(c)} />
-              ))}
-            </div>
-          </div>
+// ── Modals ────────────────────────────────────────────────────────────────────
 
-          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-            <button type="button" onClick={onClose} style={{
-              flex: 1, padding: '10px',
-              background: 'var(--surface2)', border: '1px solid var(--border)',
-              borderRadius: 9, color: 'var(--text-muted)',
-              fontFamily: 'var(--font-body)', fontSize: 14, cursor: 'pointer',
-            }}>
-              Cancelar
-            </button>
-            <button type="submit" disabled={loading} style={{
-              flex: 1, padding: '10px',
-              background: 'var(--accent)', border: 'none',
-              borderRadius: 9, color: '#fff',
-              fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600,
-              cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1,
-            }}>
-              {loading ? 'Salvando...' : 'Salvar'}
-            </button>
-          </div>
-        </form>
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 200,
+      background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
+    }} onClick={onClose}>
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border2)',
+        borderRadius: 16, padding: 28, width: '100%', maxWidth: 420,
+      }} onClick={e => e.stopPropagation()}>
+        <h2 style={{ fontWeight: 700, fontSize: 18, marginBottom: 20 }}>{title}</h2>
+        {children}
       </div>
     </div>
   )
 }
 
-// Page
+const inputStyle: React.CSSProperties = {
+  width: '100%', padding: '10px 13px',
+  background: 'var(--surface2)', border: '1px solid var(--border)',
+  borderRadius: 9, color: 'var(--text)',
+  fontFamily: 'inherit', fontSize: 14, outline: 'none', boxSizing: 'border-box',
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function DecksPage() {
   const [decks, setDecks] = useState<Deck[]>([])
+  const [folders, setFolders] = useState<FolderItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [modal, setModal] = useState<null | 'create' | Deck>(null)
+  const [selectedFolder, setSelectedFolder] = useState<number | null | 'root'>('root')
+
+  // Modais
+  const [deckModal, setDeckModal] = useState<null | 'create' | Deck>(null)
+  const [folderModal, setFolderModal] = useState<null | 'create' | { id: number; name: string }>(null)
+  const [moveModal, setMoveModal] = useState<Deck | null>(null)
+
+  // Form states
+  const [deckName, setDeckName] = useState('')
+  const [deckDesc, setDeckDesc] = useState('')
+  const [folderName, setFolderName] = useState('')
+  const [folderParentId, setFolderParentId] = useState<number | ''>('')
+  const [moveFolderId, setMoveFolderId] = useState<number | ''>('')
+  const [saving, setSaving] = useState(false)
 
   async function load() {
     try {
-      const data = await deckService.getAll()
-      setDecks(data)
+      const [decksData, foldersData] = await Promise.all([
+        deckService.getAll(),
+        folderService.getTree(),
+      ])
+      setDecks(decksData)
+      setFolders(foldersData)
     } catch { /* ignore */ }
     setLoading(false)
   }
 
   useEffect(() => { load() }, [])
 
-  async function handleSave(name: string, desc: string, color: string) {
-    if (modal === 'create') {
-      await deckService.create(name, desc, color)
-    } else if (modal && typeof modal !== 'string') {
-      await deckService.update(modal.id, name, desc, color)
-    }
-    setModal(null)
+  // Filtra decks por pasta selecionada
+  const visibleDecks = decks.filter(d => {
+    if (selectedFolder === 'root') return d.folderId == null
+    return d.folderId === selectedFolder
+  })
+
+  // Achata a árvore de pastas para o select
+  function flattenFolders(folders: FolderItem[], depth = 0): { id: number; name: string; depth: number }[] {
+    return folders.flatMap(f => [
+      { id: f.id, name: f.name, depth },
+      ...flattenFolders(f.children || [], depth + 1),
+    ])
+  }
+  const allFolders = flattenFolders(folders)
+
+  async function handleSaveDeck() {
+    if (!deckName.trim()) return
+    setSaving(true)
+    try {
+      if (deckModal === 'create') {
+        await deckService.create(deckName.trim(), deckDesc.trim())
+      } else if (deckModal && typeof deckModal !== 'string') {
+        await deckService.update(deckModal.id, deckName.trim(), deckDesc.trim())
+      }
+      setDeckModal(null)
+      load()
+    } finally { setSaving(false) }
+  }
+
+  async function handleSaveFolder() {
+    if (!folderName.trim()) return
+    setSaving(true)
+    try {
+      if (folderModal === 'create') {
+        await folderService.create(folderName.trim(), folderParentId ? Number(folderParentId) : undefined)
+      } else if (folderModal && typeof folderModal !== 'string') {
+        await folderService.rename(folderModal.id, folderName.trim())
+      }
+      setFolderModal(null)
+      load()
+    } finally { setSaving(false) }
+  }
+
+  async function handleMoveToFolder() {
+    if (!moveModal) return
+    setSaving(true)
+    try {
+      if (moveFolderId === '') {
+        await folderService.removeDeckFromFolder(moveModal.id)
+      } else {
+        await folderService.moveDeckToFolder(Number(moveFolderId), moveModal.id)
+      }
+      setMoveModal(null)
+      load()
+    } finally { setSaving(false) }
+  }
+
+  async function handleDeleteDeck(id: number) {
+    if (!confirm('Excluir este deck e todos os seus cards?')) return
+    await deckService.delete(id)
     load()
   }
 
-  async function handleDelete(id: number) {
-    if (!confirm('Excluir este deck e todos os seus cards?')) return
-    await deckService.delete(id)
+  async function handleDeleteFolder(id: number) {
+    if (!confirm('Excluir esta pasta? Os decks dentro ficarão soltos.')) return
+    await folderService.delete(id)
+    if (selectedFolder === id) setSelectedFolder('root')
     load()
   }
 
   async function handleToggleReview(id: number) {
     try {
       const updated = await deckService.toggleReview(id)
-      // Usa o valor confirmado pelo backend como fonte da verdade
-      setDecks(prev =>
-        prev.map(d => d.id === id ? { ...d, reviewEnabled: updated.reviewEnabled } : d)
-      )
-    } catch {
-      console.error('Erro ao alterar status de revisão')
-    }
+      setDecks(prev => prev.map(d => d.id === id ? { ...d, reviewEnabled: updated.reviewEnabled } : d))
+    } catch { /* ignore */ }
   }
 
   const enabledCount = decks.filter(d => d.reviewEnabled).length
@@ -375,100 +354,265 @@ export default function DecksPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <Navbar />
 
-      <div style={{ paddingTop: 92, paddingLeft: 32, paddingRight: 32, paddingBottom: 60, maxWidth: 1100, margin: '0 auto' }}>
+      <div style={{ paddingTop: 88, paddingLeft: 24, paddingRight: 24, paddingBottom: 60, maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 24 }}>
 
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 40 }}>
-          <div style={{ animation: 'fadeUp 0.4s ease' }}>
-            <h1 style={{
-              fontFamily: 'var(--font-display)', fontWeight: 800,
-              fontSize: 32, letterSpacing: '-1px', marginBottom: 6,
-            }}>
-              Meus Decks
-            </h1>
-            <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>
-              {loading ? '—' : `${decks.length} deck${decks.length !== 1 ? 's' : ''}`}
-              {!loading && decks.length > 0 && (
-                <span style={{ marginLeft: 8, color: 'var(--green)', fontSize: 12 }}>
-                  · {enabledCount} para revisão
-                </span>
-              )}
-            </p>
+        {/* ── Sidebar de pastas ── */}
+        <div style={{
+          width: 240, flexShrink: 0,
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 14, padding: 16, height: 'fit-content',
+          position: 'sticky', top: 88,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+              Pastas
+            </span>
+            <button
+              onClick={() => { setFolderName(''); setFolderParentId(''); setFolderModal('create') }}
+              title="Nova pasta"
+              style={{
+                width: 24, height: 24, borderRadius: 6, border: '1px solid var(--border)',
+                background: 'transparent', color: 'var(--text-muted)',
+                fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >+</button>
           </div>
 
+          {/* Opção "Todos" */}
           <button
-            onClick={() => setModal('create')}
+            onClick={() => setSelectedFolder('root')}
             style={{
-              display: 'flex', alignItems: 'center', gap: 8,
-              padding: '10px 18px',
-              background: 'var(--accent)', border: 'none',
-              borderRadius: 10, color: '#fff',
-              fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 600,
-              cursor: 'pointer', transition: 'all 0.15s',
-              animation: 'fadeUp 0.4s ease 0.1s both',
+              width: '100%', display: 'flex', alignItems: 'center', gap: 6,
+              padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+              background: selectedFolder === 'root' ? 'var(--accent-bg)' : 'transparent',
+              border: `1px solid ${selectedFolder === 'root' ? 'var(--accent-border)' : 'transparent'}`,
+              color: selectedFolder === 'root' ? 'var(--accent)' : 'var(--text-muted)',
+              fontFamily: 'inherit', fontSize: 13, fontWeight: selectedFolder === 'root' ? 600 : 400,
+              marginBottom: 4, transition: 'all 0.15s', textAlign: 'left',
             }}
           >
-            <span style={{ fontSize: 16 }}>+</span> Novo Deck
+            <span style={{ fontSize: 14 }}>🏠</span>
+            <span>Sem pasta</span>
+            <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.4 }}>
+              {decks.filter(d => d.folderId == null).length}
+            </span>
           </button>
+
+          {/* Árvore de pastas */}
+          {folders.length === 0 ? (
+            <div style={{ fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', padding: '16px 0' }}>
+              Nenhuma pasta ainda
+            </div>
+          ) : (
+            <FolderTree
+              folders={folders}
+              selectedId={typeof selectedFolder === 'number' ? selectedFolder : null}
+              onSelect={id => setSelectedFolder(id)}
+            />
+          )}
+
+          {/* Ações na pasta selecionada */}
+          {typeof selectedFolder === 'number' && (
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', gap: 6 }}>
+              <button
+                onClick={() => {
+                  const f = allFolders.find(f => f.id === selectedFolder)
+                  if (f) { setFolderName(f.name); setFolderModal({ id: f.id, name: f.name }) }
+                }}
+                style={{
+                  flex: 1, padding: '5px', fontSize: 11,
+                  background: 'transparent', border: '1px solid var(--border)',
+                  borderRadius: 7, color: 'var(--text-muted)', cursor: 'pointer',
+                }}
+              >✎ Renomear</button>
+              <button
+                onClick={() => handleDeleteFolder(selectedFolder)}
+                style={{
+                  padding: '5px 8px', fontSize: 11,
+                  background: 'transparent', border: '1px solid var(--border)',
+                  borderRadius: 7, color: 'var(--red)', cursor: 'pointer', opacity: 0.7,
+                }}
+              >✕</button>
+            </div>
+          )}
         </div>
 
-        {/* Grid */}
-        {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}>
+        {/* ── Conteúdo principal ── */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32 }}>
+            <div>
+              <h1 style={{ fontWeight: 800, fontSize: 28, letterSpacing: '-0.6px', margin: 0 }}>
+                {selectedFolder === 'root' ? 'Decks' : (allFolders.find(f => f.id === selectedFolder)?.name || 'Pasta')}
+              </h1>
+              <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '4px 0 0' }}>
+                {loading ? '—' : `${visibleDecks.length} deck${visibleDecks.length !== 1 ? 's' : ''}`}
+                {!loading && decks.length > 0 && (
+                  <span style={{ marginLeft: 8, color: '#22d3a5', fontSize: 12 }}>
+                    · {enabledCount} para revisão
+                  </span>
+                )}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: 8 }}>
+              {typeof selectedFolder === 'number' && (
+                <button
+                  onClick={() => { setFolderName(''); setFolderParentId(selectedFolder); setFolderModal('create') }}
+                  style={{
+                    padding: '9px 14px', background: 'var(--surface)',
+                    border: '1px solid var(--border)', borderRadius: 10,
+                    color: 'var(--text-muted)', fontFamily: 'inherit',
+                    fontSize: 13, cursor: 'pointer',
+                  }}
+                >
+                  📁 Nova subpasta
+                </button>
+              )}
+              <button
+                onClick={() => { setDeckName(''); setDeckDesc(''); setDeckModal('create') }}
+                style={{
+                  padding: '9px 16px', background: 'var(--accent)',
+                  border: 'none', borderRadius: 10, color: '#fff',
+                  fontFamily: 'inherit', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                }}
+              >
+                + Novo deck
+              </button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 80 }}>
+              <div style={{
+                width: 32, height: 32, border: '2px solid var(--border)',
+                borderTopColor: 'var(--accent)', borderRadius: '50%',
+                animation: 'spin 0.8s linear infinite',
+              }} />
+            </div>
+          ) : visibleDecks.length === 0 ? (
+            <div style={{ textAlign: 'center', paddingTop: 80 }}>
+              <div style={{ fontSize: 40, marginBottom: 16 }}>📭</div>
+              <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>
+                {selectedFolder === 'root' ? 'Nenhum deck sem pasta.' : 'Nenhum deck nesta pasta.'}
+              </p>
+              <button
+                onClick={() => { setDeckName(''); setDeckDesc(''); setDeckModal('create') }}
+                style={{
+                  padding: '10px 24px', background: 'var(--accent)', border: 'none',
+                  borderRadius: 10, color: '#fff', fontFamily: 'inherit',
+                  fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                }}
+              >Criar deck</button>
+            </div>
+          ) : (
             <div style={{
-              width: 32, height: 32,
-              border: '2px solid var(--border2)', borderTopColor: 'var(--accent)',
-              borderRadius: '50%', animation: 'spin 0.8s linear infinite',
-            }} />
-          </div>
-        ) : decks.length === 0 ? (
-          <div style={{ textAlign: 'center', paddingTop: 100, animation: 'fadeUp 0.5s ease' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>▦</div>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 20, marginBottom: 8 }}>
-              Nenhum deck ainda
-            </h3>
-            <p style={{ color: 'var(--text-muted)', marginBottom: 24, fontSize: 14 }}>
-              Crie seu primeiro deck e comece a estudar.
-            </p>
-            <button
-              onClick={() => setModal('create')}
-              style={{
-                padding: '10px 24px',
-                background: 'var(--accent)', border: 'none',
-                borderRadius: 10, color: '#fff',
-                fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Criar primeiro deck
-            </button>
-          </div>
-        ) : (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-            gap: 16,
-          }}>
-            {decks.map((deck, i) => (
-              <div key={deck.id} style={{ animation: `fadeUp 0.4s ease ${i * 0.05}s both` }}>
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+              gap: 14,
+            }}>
+              {visibleDecks.map(deck => (
                 <DeckCard
+                  key={deck.id}
                   deck={deck}
-                  onEdit={setModal}
-                  onDelete={handleDelete}
-                  onToggleReview={handleToggleReview}
+                  onEdit={() => { setDeckName(deck.name); setDeckDesc(deck.description || ''); setDeckModal(deck) }}
+                  onDelete={() => handleDeleteDeck(deck.id)}
+                  onToggleReview={() => handleToggleReview(deck.id)}
+                  onMoveToFolder={() => { setMoveFolderId(''); setMoveModal(deck) }}
                 />
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {modal && (
-        <DeckModal
-          deck={modal === 'create' ? undefined : modal}
-          onClose={() => setModal(null)}
-          onSave={handleSave}
-        />
+      {/* ── Modal Deck ── */}
+      {deckModal && (
+        <Modal title={deckModal === 'create' ? 'Novo Deck' : 'Editar Deck'} onClose={() => setDeckModal(null)}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nome</label>
+              <input value={deckName} onChange={e => setDeckName(e.target.value)} placeholder="Ex: Inglês B2" style={inputStyle}
+                onFocus={e => (e.target.style.borderColor = 'var(--accent-border)')}
+                onBlur={e => (e.target.style.borderColor = 'var(--border)')}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Descrição</label>
+              <textarea value={deckDesc} onChange={e => setDeckDesc(e.target.value)} placeholder="Opcional..." rows={2}
+                style={{ ...inputStyle, resize: 'vertical' }}
+                onFocus={e => (e.target.style.borderColor = 'var(--accent-border)')}
+                onBlur={e => (e.target.style.borderColor = 'var(--border)')}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+              <button onClick={() => setDeckModal(null)} style={{ flex: 1, padding: '10px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 9, color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 14, cursor: 'pointer' }}>Cancelar</button>
+              <button onClick={handleSaveDeck} disabled={saving || !deckName.trim()} style={{ flex: 1, padding: '10px', background: 'var(--accent)', border: 'none', borderRadius: 9, color: '#fff', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+                {saving ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ── Modal Pasta ── */}
+      {folderModal && (
+        <Modal title={folderModal === 'create' ? 'Nova Pasta' : 'Renomear Pasta'} onClose={() => setFolderModal(null)}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nome</label>
+              <input value={folderName} onChange={e => setFolderName(e.target.value)} placeholder="Ex: Idiomas" style={inputStyle}
+                onFocus={e => (e.target.style.borderColor = 'var(--accent-border)')}
+                onBlur={e => (e.target.style.borderColor = 'var(--border)')}
+              />
+            </div>
+            {folderModal === 'create' && (
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Dentro de</label>
+                <select value={folderParentId} onChange={e => setFolderParentId(Number(e.target.value) || '')}
+                  style={{ ...inputStyle, cursor: 'pointer' }}>
+                  <option value="">Raiz (sem pasta pai)</option>
+                  {allFolders.map(f => (
+                    <option key={f.id} value={f.id}>
+                      {'  '.repeat(f.depth)}{f.depth > 0 ? '└ ' : ''}{f.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+              <button onClick={() => setFolderModal(null)} style={{ flex: 1, padding: '10px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 9, color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 14, cursor: 'pointer' }}>Cancelar</button>
+              <button onClick={handleSaveFolder} disabled={saving || !folderName.trim()} style={{ flex: 1, padding: '10px', background: 'var(--accent)', border: 'none', borderRadius: 9, color: '#fff', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+                {saving ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* ── Modal Mover Deck ── */}
+      {moveModal && (
+        <Modal title={`Mover "${moveModal.name}"`} onClose={() => setMoveModal(null)}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Mover para</label>
+              <select value={moveFolderId} onChange={e => setMoveFolderId(Number(e.target.value) || '')}
+                style={{ ...inputStyle, cursor: 'pointer' }}>
+                <option value="">Sem pasta (raiz)</option>
+                {allFolders.map(f => (
+                  <option key={f.id} value={f.id}>
+                    {'  '.repeat(f.depth)}{f.depth > 0 ? '└ ' : ''}📁 {f.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
+              <button onClick={() => setMoveModal(null)} style={{ flex: 1, padding: '10px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 9, color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 14, cursor: 'pointer' }}>Cancelar</button>
+              <button onClick={handleMoveToFolder} disabled={saving} style={{ flex: 1, padding: '10px', background: 'var(--accent)', border: 'none', borderRadius: 9, color: '#fff', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+                {saving ? 'Movendo...' : 'Mover'}
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   )

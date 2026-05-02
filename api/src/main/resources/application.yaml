@@ -2,9 +2,17 @@ spring:
   application:
     name: api
   datasource:
+    #LOCAL
     #url: jdbc:postgresql://localhost:5432/flashcards_app
     #username: postgres
     #password: admin
+
+    #PRODUCTION DB
+    #url: jdbc:postgresql://trolley.proxy.rlwy.net:48677/railway?sslmode=require
+    #username: postgres
+    #password: zBXRuksKShVcYEfbyhlmDmZxUIbOXMGl
+
+    #DEPLOY EM PROD
     url: ${DATABASE_URL}
     username: ${PGUSER}
     password: ${PGPASSWORD}
@@ -14,11 +22,11 @@ spring:
       ddl-auto: none
       jdbc:
         time_zone: America/Sao_Paulo
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
-    open-in-view: true
+        format_sql: false
+    open-in-view: false
 
   flyway:
     enabled: true

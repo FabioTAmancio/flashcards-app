@@ -36,152 +36,182 @@ public class ApkgImportService {
     @Autowired private CloudinaryService cloudinaryService;
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final long MAX_IMAGE_BYTES = 20L * 1024 * 1024; // 20MB por imagem
 
     @Transactional
     public ApkgImportResultDTO importApkg(MultipartFile file, Long deckId, User user) throws Exception {
         Deck deck = deckRepository.findById(deckId)
-                .orElseThrow(() -> new RuntimeException("Deck not found"));
-        if(!deck.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Deck does not belong this user");
-        }
+                .orElseThrow(() -> new RuntimeException("Deck não encontrado"));
+        if (!deck.getUser().getId().equals(user.getId()))
+            throw new RuntimeException("Deck não pertence ao usuário");
 
-        //create temp dir
         Path tempDir = Files.createTempDirectory("apkg_");
         try {
-            //Unpack .apkg
-            unzip(file.getInputStream(), tempDir);
+            // Streaming direto para disco — não carrega o .apkg inteiro na heap
+            unzipStream(file.getInputStream(), tempDir);
 
-            //Ready midia map: {"0": "filename.jpg", "1": "filename2.png", ...}
             Map<String, String> mediaMap = readMediaMap(tempDir);
-
-            //Connect to SQLite
             Path dbPath = findDatabase(tempDir);
-            String jdbcUrl = "jdbc:sqlite:" + dbPath.toAbsolutePath();
+            ensureSqliteFile(dbPath);
 
             int imported = 0, skipped = 0, imagesUploaded = 0;
             List<String> errors = new ArrayList<>();
 
-            try(Connection conn = DriverManager.getConnection(jdbcUrl)) {
-                //Collect version of Anki schema (anki2 vs anki21)
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath.toAbsolutePath())) {
                 List<Map<String, String>> cards = extractCards(conn);
+                System.out.println("[APKG] found " + cards.size() + " cards");
 
-                for(Map<String, String> card : cards) {
+                for (Map<String, String> cardData : cards) {
                     try {
-                        String front = card.get("front");
-                        String back = card.get("back");
+                        String front = cardData.get("front");
+                        String back  = cardData.get("back");
+                        if (isBlank(front) || isBlank(back)) { skipped++; continue; }
 
-                        if(isBlank(front) || isBlank(back)) {
-                            skipped++;
-                            continue;
-                        }
-
-                        //Process the image inline in fields
                         ImageProcessResult frontResult = processImages(front, mediaMap, tempDir, errors);
-                        ImageProcessResult backResult = processImages(back, mediaMap, tempDir, errors);
+                        ImageProcessResult backResult  = processImages(back,  mediaMap, tempDir, errors);
                         imagesUploaded += frontResult.uploadCount + backResult.uploadCount;
 
-                        //Create flashcard
                         Flashcard f = new Flashcard();
                         f.setFront(stripHtml(frontResult.text));
                         f.setBack(stripHtml(backResult.text));
                         f.setSubject(deck.getName());
-                        f.setDeck(deck);
-                        f.setUser(user);
+                        f.setDeck(deck); f.setUser(user);
                         f.setCardType(CardType.BASIC);
-
-                        //if find the image, use first by frontImageUrl/backImageUrl
-                        if(!frontResult.imageUrls.isEmpty()) {
-                            f.setFrontImageUrl(frontResult.imageUrls.get(0));
-                        }
-                        if(!backResult.imageUrls.isEmpty()) {
-                            f.setBackImageUrl(backResult.imageUrls.get(0));
-                        }
+                        if (!frontResult.imageUrls.isEmpty()) f.setFrontImageUrl(frontResult.imageUrls.get(0));
+                        if (!backResult.imageUrls.isEmpty())  f.setBackImageUrl(backResult.imageUrls.get(0));
 
                         flashcardRepository.save(f);
                         createProgress(user, f);
                         imported++;
-                    } catch(Exception e) {
+                    } catch (Exception e) {
                         skipped++;
-                        errors.add("Ignored Card: " + e.getMessage());
+                        errors.add("Card ignorado: " + e.getMessage());
                     }
                 }
             }
 
             return new ApkgImportResultDTO(imported, skipped, imagesUploaded, errors);
+
         } finally {
-            //Clean temp files
             deleteDirectory(tempDir);
+            System.gc(); // sugere GC após operação pesada
         }
     }
 
+    // ── Streaming para disco — buffer de 8KB, zero heap extra ────────────────
+
+    private void unzipStream(InputStream is, Path destDir) throws IOException {
+        byte[] buf = new byte[8192];
+        try (ZipInputStream zis = new ZipInputStream(new BufferedInputStream(is, 65536))) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                Path target = destDir.resolve(entry.getName()).normalize();
+                if (!target.startsWith(destDir)) throw new IOException("Zip path traversal: " + entry.getName());
+                if (entry.isDirectory()) {
+                    Files.createDirectories(target);
+                } else {
+                    Files.createDirectories(target.getParent());
+                    try (OutputStream out = new BufferedOutputStream(Files.newOutputStream(target))) {
+                        int len;
+                        while ((len = zis.read(buf)) != -1) out.write(buf, 0, len);
+                    }
+                }
+                zis.closeEntry();
+            }
+        }
+    }
+
+    // ── Detecta compressão zlib (Anki 2.1.28+) ───────────────────────────────
+
+    private void ensureSqliteFile(Path dbPath) throws IOException {
+        byte[] header = new byte[16];
+        try (InputStream is = Files.newInputStream(dbPath)) {
+            if (is.read(header) < 16) return;
+        }
+
+        if (!new String(Arrays.copyOf(header, 15)).equals("SQLite format 3")) {
+            System.out.println("[APKG] not SQLite, trying zlib decompress...");
+            Path tmp = dbPath.resolveSibling(dbPath.getFileName() + ".tmp");
+            try {
+                byte[] buf = new byte[8192];
+                try (InputStream fis = new BufferedInputStream(Files.newInputStream(dbPath));
+                     InflaterInputStream iis = new InflaterInputStream(fis);
+                     OutputStream out = new BufferedOutputStream(Files.newOutputStream(tmp))) {
+                    int n;
+                    while ((n = iis.read(buf)) != -1) out.write(buf, 0, n);
+                }
+                Files.move(tmp, dbPath, StandardCopyOption.REPLACE_EXISTING);
+                System.out.println("[APKG] zlib decompress ok");
+            } catch (Exception e) {
+                System.out.println("[APKG] zlib failed: " + e.getMessage());
+                if (Files.exists(tmp)) Files.delete(tmp);
+            }
+        }
+    }
+
+    // ── Extrai cards do SQLite ────────────────────────────────────────────────
+
     private List<Map<String, String>> extractCards(Connection conn) throws SQLException {
         List<Map<String, String>> result = new ArrayList<>();
-
-        //Try chema anki21 first, after anki2
-        String query = """
-            SELECT n.flds
-            FROM cards c
-            JOIN notes n ON c.nid = n.id
-            WHERE c.queue != -1
-            GROUP BY n.id
-        """;
-
-        try(Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(query)) {
-
-            while(rs.next()) {
-                String flds = rs.getString("flds");
-                if(flds == null) continue;
-
-                // Split fields by caractere \x1f ASCII 31
-                String[] parts = flds.split("\u001f", -1);
-                if(parts.length >= 2) {
-                    Map<String, String> card = new HashMap<>();
-                    card.put("front", parts[0].trim());
-                    card.put("back", parts[1].trim());
-                    result.add(card);
-                }
+        try {
+            try (Statement s = conn.createStatement();
+                 ResultSet rs = s.executeQuery(
+                         "SELECT n.flds FROM cards c JOIN notes n ON c.nid = n.id WHERE c.queue != -1 GROUP BY n.id"
+                 )) {
+                while (rs.next()) parseFields(rs.getString("flds"), result);
             }
+            if (!result.isEmpty()) return result;
+        } catch (SQLException e) {
+            System.out.println("[APKG] JOIN failed: " + e.getMessage());
+        }
+        try (Statement s = conn.createStatement();
+             ResultSet rs = s.executeQuery("SELECT flds FROM notes")) {
+            while (rs.next()) parseFields(rs.getString("flds"), result);
+        } catch (SQLException e) {
+            System.out.println("[APKG] notes query failed: " + e.getMessage());
         }
         return result;
     }
 
-    private ImageProcessResult processImages(
-            String html, Map<String, String> mediaMap,
-            Path tempDir, List<String> errors
-    ) {
+    private void parseFields(String flds, List<Map<String, String>> result) {
+        if (flds == null) return;
+        String[] parts = flds.split("\u001f", -1);
+        if (parts.length >= 2 && !isBlank(parts[0]) && !isBlank(parts[1])) {
+            Map<String, String> card = new HashMap<>();
+            card.put("front", parts[0].trim());
+            card.put("back",  parts[1].trim());
+            result.add(card);
+        }
+    }
+
+    // ── Processa imagens com limite de tamanho ────────────────────────────────
+
+    private ImageProcessResult processImages(String html, Map<String, String> mediaMap, Path tempDir, List<String> errors) {
         List<String> imageUrls = new ArrayList<>();
         int uploadCount = 0;
-
-        Pattern imgPattern = Pattern.compile(
-                "<img[^>]+src=[\"']([^\"']+)[\"'][^>]*>",
-                Pattern.CASE_INSENSITIVE
-        );
-        Matcher matcher = imgPattern.matcher(html);
+        Matcher matcher = Pattern.compile("<img[^>]+src=[\"']([^\"']+)[\"'][^>]*>", Pattern.CASE_INSENSITIVE).matcher(html);
         StringBuffer sb = new StringBuffer();
 
-        while(matcher.find()) {
+        while (matcher.find()) {
             String src = matcher.group(1);
-
             String fileName = mediaMap.getOrDefault(src, src);
             Path imagePath = tempDir.resolve(fileName);
 
             if (Files.exists(imagePath)) {
                 try {
+                    long fileSize = Files.size(imagePath);
+                    if (fileSize > MAX_IMAGE_BYTES) {
+                        errors.add("Imagem muito grande ignorada: " + fileName + " (" + fileSize / 1024 / 1024 + "MB)");
+                        matcher.appendReplacement(sb, "");
+                        continue;
+                    }
                     byte[] imageBytes = Files.readAllBytes(imagePath);
-                    String mimeType = detectMime(fileName);
-
-                    MultipartFile mf = new MockMultipartFile(
-                            fileName, fileName, mimeType, imageBytes
+                    String cloudUrl = cloudinaryService.upload(
+                            new MockMultipartFile(fileName, fileName, detectMime(fileName), imageBytes)
                     );
-                    String cloudUrl = cloudinaryService.upload(mf);
                     imageUrls.add(cloudUrl);
                     uploadCount++;
-
-                    // Substitui a tag img pela URL do Cloudinary
-                    matcher.appendReplacement(sb,
-                            "<img src=\"" + cloudUrl + "\">"
-                    );
+                    matcher.appendReplacement(sb, "<img src=\"" + cloudUrl + "\">");
                 } catch (Exception e) {
                     errors.add("Imagem ignorada (" + fileName + "): " + e.getMessage());
                     matcher.appendReplacement(sb, "");
@@ -194,105 +224,62 @@ public class ApkgImportService {
         return new ImageProcessResult(sb.toString(), imageUrls, uploadCount);
     }
 
-    // Helpers
-    private void unzip(InputStream is, Path destDir) throws IOException {
-        try(ZipInputStream zis = new ZipInputStream(is)) {
-            ZipEntry entry;
-            while((entry = zis.getNextEntry()) != null) {
-                Path target = destDir.resolve(entry.getName()).normalize();
-                if(!target.startsWith(destDir)) {
-                    throw new IOException("Zip path traversal detectado: " + entry.getName());
-                }
-                if(entry.isDirectory()) {
-                    Files.createDirectories(target);
-                } else {
-                    Files.createDirectories(target.getParent());
-                    Files.copy(zis, target, StandardCopyOption.REPLACE_EXISTING);
-                }
-                zis.closeEntry();
-            }
-        }
-    }
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     @SuppressWarnings("unchecked")
     private Map<String, String> readMediaMap(Path tempDir) throws IOException {
         Path mediaFile = tempDir.resolve("media");
-        if(!Files.exists(mediaFile)) {
-            return Collections.emptyMap();
-        }
-        String json = Files.readString(mediaFile);
-        return objectMapper.readValue(json, Map.class);
+        if (!Files.exists(mediaFile)) return Collections.emptyMap();
+        return objectMapper.readValue(mediaFile.toFile(), Map.class);
     }
 
     private Path findDatabase(Path tempDir) throws IOException {
-        //try collection.anki21 first, after try anki2
-        Path anki21 = tempDir.resolve("collection.anki21");
-        if(Files.exists(anki21)) {
-            return anki21;
+        for (String name : List.of("collection.anki21", "collection.anki2")) {
+            Path p = tempDir.resolve(name);
+            if (Files.exists(p)) return p;
         }
-        Path anki2 = tempDir.resolve("collection.anki2");
-        if(Files.exists(anki2)) {
-            return anki2;
+        try (var stream = Files.walk(tempDir)) {
+            return stream
+                    .filter(p -> p.getFileName().toString().matches(".*\\.anki2[1]?"))
+                    .findFirst()
+                    .orElseThrow(() -> new IOException("Banco não encontrado no .apkg"));
         }
-        throw new IOException("File in db not found");
     }
 
     private String stripHtml(String html) {
-        if(html == null) {
-            return "";
-        }
-        return html
-                .replaceAll("<br\\s*/?>", "\n")
-                .replaceAll("<[^>]+>", "")
-                .replaceAll("&nbsp;", " ")
-                .replaceAll("&lt;", "<")
-                .replaceAll("&gt;", ">")
-                .replaceAll("&amp;", "&")
-                .replaceAll("&quot;", "\"")
-                .replaceAll("\\s+", " ")
-                .trim();
+        if (html == null) return "";
+        return html.replaceAll("<br\\s*/?>", "\n").replaceAll("<[^>]+>", "")
+                .replaceAll("&nbsp;", " ").replaceAll("&lt;", "<").replaceAll("&gt;", ">")
+                .replaceAll("&amp;", "&").replaceAll("&quot;", "\"")
+                .replaceAll("\\s+", " ").trim();
     }
 
     private String detectMime(String fileName) {
         String lower = fileName.toLowerCase();
-        if(lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jped";
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
         if (lower.endsWith(".png"))  return "image/png";
         if (lower.endsWith(".gif"))  return "image/gif";
         if (lower.endsWith(".webp")) return "image/webp";
-        if (lower.endsWith(".svg"))  return "image/svg+xml";
         return "image/jpeg";
     }
 
     private void createProgress(User user, Flashcard flashcard) {
-        if(!progressRepository.existsByUserAndFlashcard(user, flashcard)) {
+        if (!progressRepository.existsByUserAndFlashcard(user, flashcard)) {
             FlashcardProgress p = new FlashcardProgress();
-            p.setUser(user);
-            p.setFlashcard(flashcard);
-            p.setInterval(1);
-            p.setEaseFactor(2.5);
-            p.setRepetitions(0);
-            p.setNextReview(LocalDateTime.now());
-            p.setStatus(CardStatus.NEW);
+            p.setUser(user); p.setFlashcard(flashcard);
+            p.setInterval(1); p.setEaseFactor(2.5); p.setRepetitions(0);
+            p.setNextReview(LocalDateTime.now()); p.setStatus(CardStatus.NEW);
             progressRepository.save(p);
         }
     }
 
-    private void deleteDirectory(Path dir) throws IOException {
-        if(!Files.exists(dir)) return;
-        Files.walk(dir)
-                .sorted(Comparator.reverseOrder())
-                .map(Path::toFile)
-                .forEach(File::delete);
+    private void deleteDirectory(Path dir) {
+        try {
+            if (!Files.exists(dir)) return;
+            Files.walk(dir).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+        } catch (IOException ignored) {}
     }
 
-    private static boolean isBlank(String s) {
-        return s == null || s.isBlank();
-    }
-
-    private record ImageProcessResult(
-            String text,
-            List<String> imageUrls,
-            int uploadCount
-    ) {}
-
+    private static boolean isBlank(String s) { return s == null || s.isBlank(); }
+    private record ImageProcessResult(String text, List<String> imageUrls, int uploadCount) {}
 }

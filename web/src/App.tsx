@@ -42,7 +42,7 @@ function AppRoutes() {
         <Route path="/decks" element={<PrivateRoute><DecksPage /></PrivateRoute>} />
         <Route path="/decks/:deckId" element={<PrivateRoute><FlashcardsPage /></PrivateRoute>} />
         <Route path="/review" element={<PrivateRoute><ReviewPage /></PrivateRoute>} />
-        <Route path="/import" element={<PrivateRoute><FixingPage /></PrivateRoute>} />
+        <Route path="/import" element={<PrivateRoute><ImportPage /></PrivateRoute>} />
         <Route path="/stats" element={<PrivateRoute><StatsPage /></PrivateRoute>} />
 
         {/* Any unknown route -> root (which redirects according to auth) */}

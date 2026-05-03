@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { deckService } from '../services/deck.service'
-import { folderService, type FolderItem, type DeckInFolder } from '../services/folder.service'
+import { folderService, type FolderItem } from '../services/folder.service'
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 

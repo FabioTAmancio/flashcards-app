@@ -9,6 +9,7 @@ import com.fabio.flashcards_app.domain.repositories.DeckRepository;
 import com.fabio.flashcards_app.domain.repositories.FolderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -34,11 +35,14 @@ public class DeckService {
         return toDTO(deck);
     }
 
+    @Transactional
     public List<DeckResponseDTO> getUserDecks(User user) {
-        return deckRepository.findByUser(user)
-                .stream()
-                .map(this::toDTO)
-                .toList();
+        return deckRepository.findDecksWithCount(user);
+
+        //        return deckRepository.findByUser(user)
+//                .stream()
+//                .map(this::toDTO)
+//                .toList();
     }
 
     public DeckResponseDTO getDeckById(Long id, User user) {
@@ -105,7 +109,7 @@ public class DeckService {
     }
 
     public DeckResponseDTO toDTO(Deck deck) {
-        int cardCount = deck.getFlashcards() != null ? deck.getFlashcards().size() : 0;
+        long cardCount = deck.getFlashcards() != null ? deck.getFlashcards().size() : 0;
         return new DeckResponseDTO(
                 deck.getId(),
                 deck.getName(),

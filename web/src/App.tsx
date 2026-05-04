@@ -6,10 +6,11 @@ import FlashcardsPage from './pages/FlashcardPage'
 import ReviewPage from './pages/ReviewPage'
 import ImportPage from './pages/ImportPage'
 import StatsPage from './pages/StatsPage'
-
+import ProfilePage from './pages/ProfilePage'
 import EmailBanner from './components/EmailBanner'
 import { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+
 
 function AppRoutes() {
   const location = useLocation()
@@ -44,6 +45,7 @@ function AppRoutes() {
         <Route path="/review" element={<PrivateRoute><ReviewPage /></PrivateRoute>} />
         <Route path="/import" element={<PrivateRoute><ImportPage /></PrivateRoute>} />
         <Route path="/stats" element={<PrivateRoute><StatsPage /></PrivateRoute>} />
+        <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
 
         {/* Any unknown route -> root (which redirects according to auth) */}
         <Route path="*" element={<Navigate to="/" replace />} />

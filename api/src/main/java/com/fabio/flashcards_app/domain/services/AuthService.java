@@ -4,6 +4,7 @@ import com.fabio.flashcards_app.data.dto.auth.AuthResponseDTO;
 import com.fabio.flashcards_app.data.dto.auth.LoginDTO;
 import com.fabio.flashcards_app.data.dto.auth.RegisterDTO;
 import com.fabio.flashcards_app.domain.models.User;
+import com.fabio.flashcards_app.domain.models.enums.UserPlan;
 import com.fabio.flashcards_app.domain.repositories.UserRepository;
 import com.fabio.flashcards_app.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -44,6 +45,8 @@ public class AuthService {
         user.setEmailVerified(false);
         user.setVerificationToken(token);
         user.setTokeExpiresAt(LocalDateTime.now().plusHours(24));
+        user.setPlan(UserPlan.FREE);
+
 
         userRepository.save(user);
 
@@ -102,7 +105,9 @@ public class AuthService {
                 user.getName(),
                 user.getEmail(),
                 user.getRole(),
-                user.getEmailVerified()
+                user.getEmailVerified(),
+                user.getPlan().name(),
+                user.getAvatarUrl()
         );
     }
 }

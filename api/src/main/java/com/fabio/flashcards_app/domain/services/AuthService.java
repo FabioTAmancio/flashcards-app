@@ -45,8 +45,7 @@ public class AuthService {
         user.setEmailVerified(false);
         user.setVerificationToken(token);
         user.setTokeExpiresAt(LocalDateTime.now().plusHours(24));
-        user.setPlan(UserPlan.FREE);
-
+        user.setPlan("FREE");
 
         userRepository.save(user);
 
@@ -106,7 +105,7 @@ public class AuthService {
                 user.getEmail(),
                 user.getRole(),
                 user.getEmailVerified(),
-                user.getPlan().name(),
+                user.getPlan(),
                 user.getAvatarUrl()
         );
     }

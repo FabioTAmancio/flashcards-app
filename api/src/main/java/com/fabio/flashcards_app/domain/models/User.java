@@ -48,7 +48,7 @@ public class User implements UserDetails {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private UserPlan plan = UserPlan.FREE;
+    private String plan = UserPlan.FREE.name();
 
     @OneToMany(mappedBy = "user")
     private List<Deck> decks;

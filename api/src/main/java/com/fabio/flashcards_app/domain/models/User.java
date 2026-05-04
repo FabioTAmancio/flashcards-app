@@ -46,7 +46,6 @@ public class User implements UserDetails {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private String plan = UserPlan.FREE.name();
 

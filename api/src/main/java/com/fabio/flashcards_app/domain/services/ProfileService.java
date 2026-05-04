@@ -36,7 +36,7 @@ public class ProfileService {
                 user.getName(),
                 user.getEmail(),
                 user.getAvatarUrl(),
-                user.getPlan().name(),
+                user.getPlan(),
                 user.getEmailVerified(),
                 totalDecks,
                 totalCards,
@@ -52,13 +52,13 @@ public class ProfileService {
     }
 
     public ProfileResponseDTO upgradeToPremium(User user) {
-        user.setPlan(UserPlan.PREMIUM);
+        user.setPlan(UserPlan.PREMIUM.name());
         userRepository.save(user);
         return getProfile(user);
     }
 
     public ProfileResponseDTO downgradeToFree(User user) {
-        user.setPlan(UserPlan.FREE);
+        user.setPlan(UserPlan.FREE.name());
         userRepository.save(user);
         return getProfile(user);
     }

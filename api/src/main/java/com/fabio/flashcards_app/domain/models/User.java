@@ -56,7 +56,7 @@ public class User implements UserDetails {
     private List<FlashcardProgress> progressList;
 
     public boolean isPremium() {
-        return UserPlan.PREMIUM.equals(this.plan);
+        return UserPlan.PREMIUM.name().equals(this.plan);
     }
 
     // UserDetails

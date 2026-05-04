@@ -49,6 +49,8 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
+                        //admin only admin role
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         // Preflight OPTIONS always permited
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()

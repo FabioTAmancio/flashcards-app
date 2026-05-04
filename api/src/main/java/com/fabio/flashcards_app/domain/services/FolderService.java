@@ -10,6 +10,7 @@ import com.fabio.flashcards_app.domain.repositories.DeckRepository;
 import com.fabio.flashcards_app.domain.repositories.FolderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -35,6 +36,7 @@ public class FolderService {
         return toDTO(folder);
     }
 
+    @Transactional
     public List<FolderResponseDTO> getTree(User user) {
         List<Folder> roots = folderRepository.findByUserAndParentIsNull(user);
         return roots.stream().map(f -> toDTOWithChildren(f, user)).toList();

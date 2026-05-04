@@ -3,7 +3,6 @@ package com.fabio.flashcards_app.web.controllers;
 import com.fabio.flashcards_app.data.dto.imports.ApkgImportResultDTO;
 import com.fabio.flashcards_app.domain.models.User;
 import com.fabio.flashcards_app.domain.services.ApkgImportService;
-import jakarta.websocket.server.PathParam;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,7 +16,7 @@ import java.util.Map;
 public class ApkgImportController {
 
     @Autowired
-    private ApkgImportService apkgImportService;
+    private ApkgImportService importService;
 
     @PostMapping("/apkg/{deckId}")
     public ResponseEntity<?> importApkg(
@@ -25,6 +24,13 @@ public class ApkgImportController {
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal User user
     ) {
+        if (!user.isPremium()) {
+            return ResponseEntity.status(403).body(Map.of(
+                    "error", "PREMIUM_REQUIRED",
+                    "message", "IMPORT ANKI DECKS IS EXCLUSIVE TO PREMIUM USERS!"
+            ));
+        }
+
         String filename = file.getOriginalFilename();
         if(filename == null || !filename.toLowerCase().endsWith(".apkg")) {
             return ResponseEntity.badRequest()
@@ -37,7 +43,7 @@ public class ApkgImportController {
         }
 
         try {
-            ApkgImportResultDTO result = apkgImportService.importApkg(file, deckId, user);
+            ApkgImportResultDTO result = importService.importApkg(file, deckId, user);
             return ResponseEntity.ok(result);
         } catch(Exception e) {
             return ResponseEntity.badRequest()

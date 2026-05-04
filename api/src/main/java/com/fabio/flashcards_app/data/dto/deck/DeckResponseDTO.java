@@ -8,7 +8,7 @@ public record DeckResponseDTO(
         String subject,
         Boolean isPublic,
         Boolean reviewEnabled,
-        Integer cardCount,
+        Long cardCount,
         Long folderId
 ) {}
 

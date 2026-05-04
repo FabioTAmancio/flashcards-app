@@ -5,6 +5,8 @@ public record AuthResponseDTO(
         String name,
         String email,
         String role,
-        Boolean emailVerified
+        Boolean emailVerified,
+        String plan,
+        String avatarUrl
 ) {
 }

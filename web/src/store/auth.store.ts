@@ -5,7 +5,7 @@ type User = {
     email: string
     role: string 
     emailVerified: boolean
-    plan: 'FREE' | 'PREMIUM'
+    plan?: 'FREE' | 'PREMIUM'
     avatarUrl?: string | null
 }
 

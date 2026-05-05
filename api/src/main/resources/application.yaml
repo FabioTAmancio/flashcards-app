@@ -3,7 +3,7 @@ spring:
     name: api
   datasource:
     #LOCAL
-    #url: jdbc:postgresql://host.docker.internal:5432/flashcards_app
+    #url: jdbc:postgresql://localhost:5432/flashcards_app
     #username: postgres
     #password: admin
 

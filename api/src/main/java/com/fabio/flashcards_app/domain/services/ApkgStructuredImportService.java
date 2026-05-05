@@ -135,7 +135,7 @@ public class ApkgStructuredImportService {
 
                     String[] parts       = info.name.split("::");
                     String deckName      = parts[parts.length - 1].trim();
-                    String resolution    = dto.resolution().getOrDefault(info.id, "CREATE_NEW");
+                    String resolution    = dto.resolutions().getOrDefault(info.id, "CREATE_NEW");
 
                     Deck deck;
 

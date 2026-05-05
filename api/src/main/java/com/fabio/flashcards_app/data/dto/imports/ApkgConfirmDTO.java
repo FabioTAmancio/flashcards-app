@@ -4,8 +4,8 @@ import java.util.Map;
 
 public record ApkgConfirmDTO(
         String uploadToken,
-        // Map of ankiDeckId -> user resolution
-        //USE_EXISTING or CREATE_NEW
-        Map<Long, String> resolution
-) {
-}
+        // Mapa de ankiDeckId -> resolução do usuário
+        // "USE_EXISTING" ou "CREATE_NEW"
+        Map<Long, String> resolutions
+) {}
+

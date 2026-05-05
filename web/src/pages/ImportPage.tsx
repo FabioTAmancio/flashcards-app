@@ -3,16 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { deckService } from '../services/deck.service'
 import { importService } from '../services/import.service'
-import { useAuthStore } from '../store/auth.store'
 
-//Types 
+
+// Types
 
 type Deck = { id: number; name: string }
+type ImportMode = 'csv' | 'apkg'
 type ParsedCard = { front: string; back: string; subject: string; _error?: string }
 type ImportResult = { imported: number; skipped: number; imagesUploaded?: number; errors?: string[] }
 
-//CSV Parser 
-
+// Parser CSV
 function parseCsv(raw: string, fallbackSubject: string): ParsedCard[] {
   return raw
     .split('\n').map(l => l.trim()).filter(Boolean)
@@ -25,7 +25,7 @@ function parseCsv(raw: string, fallbackSubject: string): ParsedCard[] {
     })
 }
 
-// Styles
+// ── Estilos ───────────────────────────────────────────────────────────────────
 
 const panel: React.CSSProperties = {
   background: 'var(--code-bg, #1a1a24)',
@@ -48,134 +48,47 @@ const fieldInput: React.CSSProperties = {
   boxSizing: 'border-box', transition: 'border-color 0.15s',
 }
 
-// Subcomponentes 
-function AnkiBanner({ isPremium }: { isPremium: boolean }) {
-  const navigate = useNavigate()
-  return (
-    <div style={{
-      ...panel,
-      background: isPremium
-        ? 'linear-gradient(135deg, rgba(170,59,255,0.08), rgba(96,165,250,0.08))'
-        : 'var(--code-bg, #1a1a24)',
-      border: isPremium ? '1px solid var(--accent-border)' : '1px solid var(--border)',
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
-    }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-          <span style={{ fontSize: 20 }}>🃏</span>
-          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-h)' }}>
-            Importar do Anki com hierarquia
-          </span>
-          <span style={{
-            fontSize: 10, padding: '2px 8px', borderRadius: 99, fontWeight: 600,
-            background: 'linear-gradient(135deg, #f59e0b, #f97316)', color: '#fff',
-            flexShrink: 0,
-          }}>
-            PREMIUM
-          </span>
-        </div>
-        <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
-          {isPremium
-            ? 'Importa seus decks mantendo pastas, subdecks e imagens — exatamente como no Anki.'
-            : 'Faça upgrade para importar decks completos com a hierarquia de pastas do Anki.'}
-        </p>
-      </div>
-      <button
-        onClick={() => navigate(isPremium ? '/import/anki' : '/profile')}
-        style={{
-          padding: '9px 18px', flexShrink: 0,
-          background: isPremium ? 'var(--accent)' : 'var(--surface2, #1a1a24)',
-          border: isPremium ? 'none' : '1px solid var(--border)',
-          borderRadius: 10, color: isPremium ? '#fff' : 'var(--text-muted)',
-          fontFamily: 'inherit', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-          transition: 'all 0.15s',
-        }}
-      >
-        {isPremium ? 'Usar →' : 'Ver planos →'}
-      </button>
-    </div>
-  )
-}
-
-function CsvPreview({ preview }: { preview: ParsedCard[] }) {
-  const valid  = preview.filter(c => !c._error)
-  const errors = preview.filter(c => !!c._error)
-  return (
-    <div style={panel}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <span style={{ ...fieldLabel, marginBottom: 0 }}>
-          Preview — {preview.length} {preview.length === 1 ? 'linha' : 'linhas'}
-        </span>
-        <div style={{ display: 'flex', gap: 10, fontSize: 11, fontWeight: 600 }}>
-          {valid.length > 0  && <span style={{ color: '#4ade80' }}>✓ {valid.length} válidos</span>}
-          {errors.length > 0 && <span style={{ color: '#f87171' }}>✕ {errors.length} com erro</span>}
-        </div>
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 280, overflowY: 'auto' }}>
-        {preview.map((c, i) => (
-          <div key={i} style={{
-            display: 'grid', gridTemplateColumns: c._error ? '1fr' : '1fr 1fr auto',
-            gap: 10, alignItems: 'center', padding: '8px 12px', borderRadius: 8, fontSize: 12,
-            background: c._error ? 'rgba(239,68,68,0.07)' : 'var(--bg)',
-            border: `1px solid ${c._error ? 'rgba(239,68,68,0.18)' : 'var(--border)'}`,
-          }}>
-            {c._error ? (
-              <span style={{ color: '#f87171' }}>{c._error}</span>
-            ) : (
-              <>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>{c.front}</span>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-muted)' }}>{c.back}</span>
-                <span style={{
-                  padding: '2px 8px', borderRadius: 99, whiteSpace: 'nowrap',
-                  background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
-                  color: 'var(--accent)', fontSize: 10,
-                }}>{c.subject}</span>
-              </>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function ImportPage() {
   const navigate = useNavigate()
-  const user = useAuthStore(s => s.user)
-  const csvFileRef = useRef<HTMLInputElement>(null)
+  const csvFileRef  = useRef<HTMLInputElement>(null)
+  const apkgFileRef = useRef<HTMLInputElement>(null)
 
-  const [decks, setDecks]           = useState<Deck[]>([])
-  const [deckId, setDeckId]         = useState<number | ''>('')
-  const [rawText, setRawText]       = useState('')
-  const [preview, setPreview]       = useState<ParsedCard[]>([])
+  const [decks, setDecks] = useState<Deck[]>([])
+  const [deckId, setDeckId] = useState<number | ''>('')
+  const [mode, setMode] = useState<ImportMode>('csv')
+
+  // CSV state
+  const [rawText, setRawText] = useState('')
+  const [preview, setPreview] = useState<ParsedCard[]>([])
   const [parseError, setParseError] = useState('')
-  const [importing, setImporting]   = useState(false)
-  const [result, setResult]         = useState<ImportResult | null>(null)
 
-  const selectedDeck = decks.find(d => d.id === Number(deckId))
-  const validCards   = preview.filter(c => !c._error)
-  const isPremium    = user?.plan?.toUpperCase() === "PREMIUM"
-  console.log({
-  user,
-  plan: user?.plan,
-  isPremium})
+  // APKG state
+  const [apkgFile, setApkgFile] = useState<File | null>(null)
+
+  // Shared
+  const [importing, setImporting] = useState(false)
+  const [importProgress, setImportProgress] = useState('')
+  const [result, setResult] = useState<ImportResult | null>(null)
 
   useEffect(() => {
     deckService.getAll().then(setDecks).catch(console.error)
   }, [])
 
+  const selectedDeck = decks.find(d => d.id === Number(deckId))
+
+  // Preview CSV em tempo real
   useEffect(() => {
     setParseError('')
     setPreview([])
-    if (!rawText.trim()) return
+    if (!rawText.trim() || mode !== 'csv') return
     try {
       setPreview(parseCsv(rawText, selectedDeck?.name || 'Geral'))
     } catch {
       setParseError('Não foi possível interpretar o conteúdo.')
     }
-  }, [rawText, selectedDeck])
+  }, [rawText, mode, selectedDeck])
 
   function handleCsvFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -186,29 +99,59 @@ export default function ImportPage() {
     e.target.value = ''
   }
 
-  async function handleImport() {
+  function handleApkgFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setApkgFile(file)
+    e.target.value = ''
+  }
+
+  // ── Importar CSV ──────────────────────────────────────────────────────────
+
+  async function handleImportCsv() {
     if (!deckId || validCards.length === 0) return
     setImporting(true)
-    setParseError('')
+    setImportProgress('Criando cards...')
     try {
-      const res = await importService.csv(Number(deckId), validCards)
-      setResult(res)
+      const result = await importService.csv(Number(deckId), validCards)
+      setResult(result)
     } catch {
       setParseError('Erro ao importar. Verifique a conexão.')
     } finally {
       setImporting(false)
+      setImportProgress('')
     }
   }
 
-  // ── Resultado ──────────────────────────────────────────────────────────────
+  // ── Importar APKG ─────────────────────────────────────────────────────────
+
+  async function handleImportApkg() {
+    if (!deckId || !apkgFile) return
+    setImporting(true)
+    setImportProgress('Processando deck do Anki...')
+    try {
+      const result = await importService.apkg(Number(deckId), apkgFile)
+      setResult(result)
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+      setParseError(msg || 'Erro ao importar o arquivo .apkg.')
+    } finally {
+      setImporting(false)
+      setImportProgress('')
+    }
+  }
+
+  const validCards = preview.filter(c => !c._error)
+  const errorCount  = preview.filter(c => !!c._error).length
+
+  // ── Tela de resultado ──────────────────────────────────────────────────────
 
   if (result) return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      
       <Navbar />
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', minHeight: '100vh',
+        justifyContent: 'center', minHeight: '100vh', gap: 0,
       }}>
         <div style={{
           width: 72, height: 72, borderRadius: '50%', marginBottom: 20,
@@ -230,7 +173,8 @@ export default function ImportPage() {
           <div style={{
             width: '100%', maxWidth: 480, marginBottom: 20,
             background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.2)',
-            borderRadius: 10, padding: '12px 16px', maxHeight: 160, overflowY: 'auto',
+            borderRadius: 10, padding: '12px 16px',
+            maxHeight: 160, overflowY: 'auto',
           }}>
             <div style={{ fontSize: 11, fontWeight: 600, color: '#fbbf24', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               Avisos ({result.errors.length})
@@ -247,48 +191,47 @@ export default function ImportPage() {
             border: 'none', borderRadius: 10, color: '#fff',
             fontFamily: 'inherit', fontSize: 14, fontWeight: 600, cursor: 'pointer',
           }}>Ver deck</button>
-          <button onClick={() => { setResult(null); setRawText(''); setPreview([]) }} style={{
-            padding: '10px 24px', background: 'transparent',
-            border: '1px solid var(--border)', borderRadius: 10,
-            color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 14, cursor: 'pointer',
+          <button onClick={() => { setResult(null); setRawText(''); setPreview([]); setApkgFile(null) }} style={{
+            padding: '10px 24px',
+            background: 'var(--code-bg, #1a1a24)', border: '1px solid var(--border)',
+            borderRadius: 10, color: 'var(--text-muted)',
+            fontFamily: 'inherit', fontSize: 14, cursor: 'pointer',
           }}>Importar mais</button>
         </div>
       </div>
     </div>
   )
 
-  // ── Principal ──────────────────────────────────────────────────────────────
+  // ── Tela principal ─────────────────────────────────────────────────────────
 
-  const canImport = !importing && !!deckId && validCards.length > 0
+  const canImport = !importing && !!deckId && (
+    mode === 'csv' ? validCards.length > 0 : !!apkgFile
+  )
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       <Navbar />
-      
 
       <div style={{ maxWidth: 660, margin: '0 auto', paddingTop: 88, paddingBottom: 60, paddingLeft: 20, paddingRight: 20 }}>
 
+        {/* Header */}
         <button onClick={() => navigate('/decks')} style={{
           background: 'none', border: 'none', padding: 0, cursor: 'pointer',
           color: 'var(--text-muted)', fontSize: 13, fontFamily: 'inherit',
           marginBottom: 20, display: 'flex', alignItems: 'center', gap: 4,
         }}>← Decks</button>
-
         <h1 style={{ fontWeight: 700, fontSize: 24, margin: '0 0 4px', letterSpacing: '-0.4px' }}>
           Importar Flashcards
         </h1>
         <p style={{ color: 'var(--text-muted)', fontSize: 14, margin: '0 0 28px' }}>
-          Importe cards de um CSV ou use a importação completa do Anki.
+          Importe cards de um arquivo CSV ou de um deck do Anki (.apkg).
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-          {/* Banner Anki Premium */}
-          <AnkiBanner isPremium={isPremium} />
-
-          {/* Deck de destino */}
+          {/* Deck */}
           <div style={panel}>
-            <label style={fieldLabel}>Deck de destino (CSV)</label>
+            <label style={fieldLabel}>Deck de destino</label>
             <select
               value={deckId}
               onChange={e => setDeckId(Number(e.target.value) || '')}
@@ -301,64 +244,176 @@ export default function ImportPage() {
             </select>
           </div>
 
-          {/* CSV */}
+          {/* Toggle CSV / APKG */}
           <div style={panel}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <label style={{ ...fieldLabel, marginBottom: 0 }}>Conteúdo CSV</label>
-              <input ref={csvFileRef} type="file" accept=".csv,.txt" onChange={handleCsvFile} style={{ display: 'none' }} />
-              <button
-                onClick={() => csvFileRef.current?.click()}
-                style={{
+            <label style={fieldLabel}>Formato</label>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {([
+                { id: 'csv'  as ImportMode, icon: '📄', label: 'CSV',  desc: 'Arquivo de texto separado por ponto-vírgula' },
+                { id: 'apkg' as ImportMode, icon: '🃏', label: 'Anki', desc: 'Arquivo .apkg exportado do Anki' },
+              ]).map(({ id, icon, label, desc }) => (
+                <button key={id} type="button" onClick={() => setMode(id)} style={{
+                  flex: 1, padding: '12px 14px', textAlign: 'left',
+                  border: `${mode === id ? '2px' : '1px'} solid ${mode === id ? 'var(--accent-border)' : 'var(--border)'}`,
+                  borderRadius: 10,
+                  background: mode === id ? 'var(--accent-bg)' : 'transparent',
+                  cursor: 'pointer', transition: 'all 0.15s', fontFamily: 'inherit',
+                }}>
+                  <div style={{ fontSize: 20, marginBottom: 4 }}>{icon}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: mode === id ? 'var(--accent)' : 'var(--text)', marginBottom: 2 }}>
+                    {label}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── CSV ── */}
+          {mode === 'csv' && (
+            <div style={panel}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <label style={{ ...fieldLabel, marginBottom: 0 }}>Conteúdo CSV</label>
+                <input ref={csvFileRef} type="file" accept=".csv,.txt" onChange={handleCsvFile} style={{ display: 'none' }} />
+                <button onClick={() => csvFileRef.current?.click()} style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
                   padding: '5px 11px', background: 'transparent',
                   border: '1px solid var(--border)', borderRadius: 8,
                   color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 12, cursor: 'pointer',
                   transition: 'border-color 0.15s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent-border)')}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-              >
-                📂 Carregar arquivo
-              </button>
-            </div>
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent-border)')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+                >
+                  📂 Carregar arquivo
+                </button>
+              </div>
 
-            <div style={{
-              padding: '9px 13px', marginBottom: 10,
-              background: 'var(--bg)', border: '1px solid var(--border)',
-              borderRadius: 8, fontFamily: 'monospace', fontSize: 12, lineHeight: 1.9,
-              color: 'var(--text-muted)',
-            }}>
-              <span style={{ color: 'var(--accent)', display: 'block', marginBottom: 2 }}>
-                frente ; verso ; matéria
-              </span>
-              Qual é a capital do Brasil? ; Brasília ; Geografia<br />
-              What is React? ; A JS library for UIs ; Programação
-            </div>
-
-            <textarea
-              value={rawText}
-              onChange={e => setRawText(e.target.value)}
-              placeholder='Cole o CSV aqui ou clique em "Carregar arquivo"'
-              rows={7}
-              style={{ ...fieldInput, fontFamily: 'monospace', fontSize: 13, lineHeight: 1.7, resize: 'vertical' }}
-              onFocus={e => (e.target.style.borderColor = 'var(--accent-border)')}
-              onBlur={e => (e.target.style.borderColor = 'var(--border)')}
-            />
-
-            {parseError && (
               <div style={{
-                marginTop: 8, padding: '8px 12px',
-                background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
-                borderRadius: 8, fontSize: 12, color: '#f87171',
-              }}>{parseError}</div>
-            )}
-          </div>
+                padding: '9px 13px', marginBottom: 10,
+                background: 'var(--bg)', border: '1px solid var(--border)',
+                borderRadius: 8, fontFamily: 'monospace', fontSize: 12, lineHeight: 1.9,
+                color: 'var(--text-muted)',
+              }}>
+                <span style={{ color: 'var(--accent)', display: 'block', marginBottom: 2 }}>
+                  frente ; verso ; matéria
+                </span>
+                Qual é a capital do Brasil? ; Brasília ; Geografia<br />
+                What is React? ; A JS library for UIs ; Programação
+              </div>
 
-          {/* Preview CSV */}
-          {preview.length > 0 && <CsvPreview preview={preview} />}
+              <textarea
+                value={rawText} onChange={e => setRawText(e.target.value)}
+                placeholder={'Cole o CSV aqui ou clique em "Carregar arquivo"'}
+                rows={7}
+                style={{ ...fieldInput, fontFamily: 'monospace', fontSize: 13, lineHeight: 1.7, resize: 'vertical' }}
+                onFocus={e => (e.target.style.borderColor = 'var(--accent-border)')}
+                onBlur={e => (e.target.style.borderColor = 'var(--border)')}
+              />
+
+              {parseError && (
+                <div style={{
+                  marginTop: 8, padding: '8px 12px',
+                  background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+                  borderRadius: 8, fontSize: 12, color: '#f87171',
+                }}>{parseError}</div>
+              )}
+            </div>
+          )}
+
+          {/* ── Preview CSV ── */}
+          {mode === 'csv' && preview.length > 0 && (
+            <div style={panel}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ ...fieldLabel, marginBottom: 0 }}>
+                  Preview — {preview.length} {preview.length === 1 ? 'linha' : 'linhas'}
+                </span>
+                <div style={{ display: 'flex', gap: 10, fontSize: 11, fontWeight: 600 }}>
+                  {validCards.length > 0 && <span style={{ color: '#4ade80' }}>✓ {validCards.length} válidos</span>}
+                  {errorCount > 0 && <span style={{ color: '#f87171' }}>✕ {errorCount} com erro</span>}
+                </div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5, maxHeight: 280, overflowY: 'auto' }}>
+                {preview.map((c, i) => (
+                  <div key={i} style={{
+                    display: 'grid', gridTemplateColumns: c._error ? '1fr' : '1fr 1fr auto',
+                    gap: 10, alignItems: 'center', padding: '8px 12px', borderRadius: 8, fontSize: 12,
+                    background: c._error ? 'rgba(239,68,68,0.07)' : 'var(--bg)',
+                    border: `1px solid ${c._error ? 'rgba(239,68,68,0.18)' : 'var(--border)'}`,
+                  }}>
+                    {c._error ? (
+                      <span style={{ color: '#f87171' }}>{c._error}</span>
+                    ) : (
+                      <>
+                        <span style={{ color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.front}</span>
+                        <span style={{ color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.back}</span>
+                        <span style={{
+                          padding: '2px 8px', borderRadius: 99, whiteSpace: 'nowrap',
+                          background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
+                          color: 'var(--accent)', fontSize: 10,
+                        }}>{c.subject}</span>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── APKG ── */}
+          {mode === 'apkg' && (
+            <div style={panel}>
+              <label style={fieldLabel}>Arquivo Anki (.apkg)</label>
+
+              <input ref={apkgFileRef} type="file" accept=".apkg" onChange={handleApkgFile} style={{ display: 'none' }} />
+
+              <button
+                onClick={() => apkgFileRef.current?.click()}
+                style={{
+                  width: '100%', padding: '32px 20px',
+                  background: apkgFile ? 'rgba(34,197,94,0.05)' : 'transparent',
+                  border: `2px dashed ${apkgFile ? 'rgba(34,197,94,0.3)' : 'var(--border)'}`,
+                  borderRadius: 12, cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                  transition: 'all 0.2s', fontFamily: 'inherit',
+                }}
+                onMouseEnter={e => !apkgFile && (e.currentTarget.style.borderColor = 'var(--accent-border)')}
+                onMouseLeave={e => !apkgFile && (e.currentTarget.style.borderColor = 'var(--border)')}
+              >
+                <span style={{ fontSize: 32 }}>{apkgFile ? '✓' : '🃏'}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: apkgFile ? '#4ade80' : 'var(--text)' }}>
+                  {apkgFile ? apkgFile.name : 'Clique para selecionar o arquivo .apkg'}
+                </span>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  {apkgFile
+                    ? `${(apkgFile.size / 1024 / 1024).toFixed(1)} MB — clique para trocar`
+                    : 'Exportado do Anki em Arquivo → Exportar → .apkg'}
+                </span>
+              </button>
+
+              {apkgFile && (
+                <div style={{
+                  marginTop: 10, padding: '10px 14px',
+                  background: 'rgba(96,165,250,0.06)', border: '1px solid rgba(96,165,250,0.15)',
+                  borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6,
+                }}>
+                  💡 Cards com imagens terão as imagens enviadas automaticamente para o servidor. Decks grandes podem demorar alguns segundos.
+                </div>
+              )}
+
+              {parseError && (
+                <div style={{
+                  marginTop: 8, padding: '8px 12px',
+                  background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+                  borderRadius: 8, fontSize: 12, color: '#f87171',
+                }}>{parseError}</div>
+              )}
+            </div>
+          )}
 
           {/* Botão importar */}
           <button
-            onClick={handleImport}
+            onClick={mode === 'csv' ? handleImportCsv : handleImportApkg}
             disabled={!canImport}
             style={{
               width: '100%', padding: '13px', borderRadius: 12,
@@ -371,12 +426,16 @@ export default function ImportPage() {
             }}
           >
             {importing
-              ? 'Importando...'
+              ? importProgress || 'Importando...'
               : !deckId
                 ? 'Selecione um deck primeiro'
-                : validCards.length === 0
-                  ? 'Cole ou carregue um CSV acima'
-                  : `Importar ${validCards.length} card${validCards.length !== 1 ? 's' : ''} → "${selectedDeck?.name}"`}
+                : mode === 'csv'
+                  ? validCards.length === 0
+                    ? 'Cole ou carregue um CSV acima'
+                    : `Importar ${validCards.length} card${validCards.length !== 1 ? 's' : ''} → "${selectedDeck?.name}"`
+                  : !apkgFile
+                    ? 'Selecione um arquivo .apkg'
+                    : `Importar "${apkgFile.name}" → "${selectedDeck?.name}"`}
           </button>
 
         </div>

@@ -38,6 +38,11 @@ public class DeckService {
     @Transactional
     public List<DeckResponseDTO> getUserDecks(User user) {
         return deckRepository.findDecksWithCount(user);
+
+        //        return deckRepository.findByUser(user)
+//                .stream()
+//                .map(this::toDTO)
+//                .toList();
     }
 
     public DeckResponseDTO getDeckById(Long id, User user) {

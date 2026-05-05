@@ -3,9 +3,9 @@ spring:
     name: api
   datasource:
     #LOCAL
-    url: jdbc:postgresql://localhost:5432/flashcards_app
-    username: postgres
-    password: admin
+    #url: jdbc:postgresql://localhost:5432/flashcards_app
+    #username: postgres
+    #password: admin
 
     #PRODUCTION DB
     #url: jdbc:postgresql://trolley.proxy.rlwy.net:48677/railway?sslmode=require
@@ -13,9 +13,9 @@ spring:
     #password: zBXRuksKShVcYEfbyhlmDmZxUIbOXMGl
 
     #DEPLOY EM PROD
-    #url: ${DATABASE_URL}
-    #username: ${PGUSER}
-    #password: ${PGPASSWORD}
+    url: ${DATABASE_URL}
+    username: ${PGUSER}
+    password: ${PGPASSWORD}
 
   jpa:
     hibernate:
@@ -48,32 +48,32 @@ server:
   port: ${PORT:8080}
 
 app:
-  #base-url: ${BASE_URL}
-  base-url: http://localhost:8080
+  base-url: ${BASE_URL}
+  #base-url: http://localhost:8080
   frontend:
-    #url: ${FRONTEND_URL}
-    url: "http://localhost:5173"
+    url: ${FRONTEND_URL}
+    #url: "http://localhost:5173"
 
 api:
   security:
     token:
-      #secret: ${JWT_SECRET}
-      secret: ${JWT_SECRET:default-secret-dev}
+      secret: ${JWT_SECRET}
+      #secret: ${JWT_SECRET:default-secret-dev}
 
 logging:
   level:
     root: INFO
 
 resend:
-  #api-key: ${RESEND_API_KEY}
-  api-key: re_NZLL9VQz_J4HdfYYuEV8w9yg7f4GwMbr8
+  api-key: ${RESEND_API_KEY}
+  #api-key: re_NZLL9VQz_J4HdfYYuEV8w9yg7f4GwMbr8
   from: noreplay@updates.fabiotrindade.com.br
 
 cloudinary:
-  #cloudname: ${CLOUD_NAME}
-  #api-key: ${CLOUD_API_KEY}
-  #api-secret: ${CLOUD_API_SECRET}
-  cloudname: dckgejjyk
-  api-key: "391144798897956"
-  api-secret: "_TrEGtdv6KkKwdQlleoPtkYH518"
+  cloudname: ${CLOUD_NAME}
+  api-key: ${CLOUD_API_KEY}
+  api-secret: ${CLOUD_API_SECRET}
+  #cloudname: dckgejjyk
+  #api-key: "391144798897956"
+  #api-secret: "_TrEGtdv6KkKwdQlleoPtkYH518"
 

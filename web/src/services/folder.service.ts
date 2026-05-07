@@ -4,6 +4,7 @@ export type FolderItem = {
     id: number
     name: string
     parentId: number | null
+    reviewEnabled: boolean
     children: FolderItem[]
     decks: DeckInFolder[]
 }
@@ -36,6 +37,11 @@ export const folderService = {
 
     move: async (id: number, parentId: number | null): Promise<FolderItem> => {
         const { data } = await api.patch(`/folders/${id}/move`, { parentId })
+        return data
+    },
+
+    toggleReview: async(id: number): Promise<FolderItem> => {
+        const { data } = await api.patch(`/folders/${id}/toggle-review`)
         return data
     },
 

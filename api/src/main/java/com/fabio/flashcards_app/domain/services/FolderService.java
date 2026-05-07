@@ -66,6 +66,21 @@ public class FolderService {
         return toDTO(folder);
     }
 
+    @Transactional
+    public FolderResponseDTO toggleReview(Long id, User user) {
+        Folder folder = findAndValidate(id, user);
+        boolean newState = !Boolean.TRUE.equals(folder.getReviewEnabled());
+
+        folder.setReviewEnabled(newState);
+        folderRepository.save(folder);
+
+        propagateReviewToDecks(folder, newState);
+
+        propagateReviewToSubFolders(folder, newState);
+
+        return toDTOWithChildren(folder, user);
+    }
+
     public DeckResponseDTO moveDeckToFolder(Long deckId, Long folderId, User user) {
         Deck deck = deckRepository.findById(deckId)
                 .orElseThrow(() -> new RuntimeException("Deck not found"));
@@ -85,6 +100,26 @@ public class FolderService {
     public void delete(Long id, User user) {
         Folder folder = findAndValidate(id, user);
         folderRepository.delete(folder);
+    }
+
+    // HELPERS
+
+    private void propagateReviewToDecks(Folder folder, boolean newState) {
+        if(folder.getDecks() == null) return;
+        for(Deck deck : folder.getDecks()) {
+            deck.setReviewEnabled(newState);
+            deckRepository.save(deck);
+        }
+    }
+
+    private void propagateReviewToSubFolders(Folder folder, boolean newState) {
+        if(folder.getChildren() == null) return;
+        for(Folder child : folder.getChildren()) {
+            child.setReviewEnabled(newState);
+            folderRepository.save(child);
+            propagateReviewToDecks(child, newState);
+            propagateReviewToSubFolders(child, newState);
+        }
     }
 
     private Folder findAndValidate(Long id, User user) {
@@ -131,6 +166,7 @@ public class FolderService {
                 folder.getId(),
                 folder.getName(),
                 folder.getParent() != null ? folder.getParent().getId() : null,
+                Boolean.TRUE.equals(folder.getReviewEnabled()),
                 children,
                 decks
         );
@@ -141,9 +177,9 @@ public class FolderService {
                 folder.getId(),
                 folder.getName(),
                 folder.getParent() != null ? folder.getParent().getId() : null,
+                Boolean.TRUE.equals(folder.getReviewEnabled()),
                 List.of(),
                 List.of()
         );
     }
-
 }

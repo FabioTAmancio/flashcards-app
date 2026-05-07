@@ -139,7 +139,7 @@ function CsvPreview({ preview }: { preview: ParsedCard[] }) {
   )
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+// Page
 
 export default function ImportPage() {
   const navigate = useNavigate()
@@ -157,10 +157,6 @@ export default function ImportPage() {
   const selectedDeck = decks.find(d => d.id === Number(deckId))
   const validCards   = preview.filter(c => !c._error)
   const isPremium    = user?.plan?.toUpperCase() === "PREMIUM"
-  console.log({
-  user,
-  plan: user?.plan,
-  isPremium})
 
   useEffect(() => {
     deckService.getAll().then(setDecks).catch(console.error)
@@ -199,8 +195,6 @@ export default function ImportPage() {
       setImporting(false)
     }
   }
-
-  // ── Resultado ──────────────────────────────────────────────────────────────
 
   if (result) return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>

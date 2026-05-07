@@ -52,6 +52,14 @@ public class FolderController {
         return ResponseEntity.ok(folderService.move(id, body.get("parentId"), user));
     }
 
+    @PatchMapping("/{id}/toggle-review")
+    public ResponseEntity<FolderResponseDTO> toggleReview(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(folderService.toggleReview(id, user));
+    }
+
     @PatchMapping("/{id}/decks/{deckId}")
     public ResponseEntity<DeckResponseDTO> moveDeckToFolder(
             @PathVariable Long id,

@@ -34,6 +34,9 @@ public class Folder {
     @OneToMany(mappedBy = "folder")
     private List<Deck> decks;
 
+    @Column(name = "review_enabled", nullable = false)
+    private Boolean reviewEnabled = true;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
 }

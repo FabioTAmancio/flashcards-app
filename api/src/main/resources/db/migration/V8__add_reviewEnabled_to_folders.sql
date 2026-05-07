@@ -1,0 +1,2 @@
+ALTER TABLE folders
+    ADD COLUMN review_enabled BOOLEAN NOT NULL DEFAULT TRUE;

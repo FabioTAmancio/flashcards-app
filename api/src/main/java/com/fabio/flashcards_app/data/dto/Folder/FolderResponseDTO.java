@@ -8,6 +8,7 @@ public record FolderResponseDTO(
         Long id,
         String name,
         Long parentId,
+        Boolean reviewEnabled,
         List<FolderResponseDTO> children,
         List<DeckResponseDTO> decks
 ) {

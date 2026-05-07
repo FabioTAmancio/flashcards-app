@@ -14,7 +14,7 @@ type Deck = {
 
 const PALETTE = ['var(--accent)', '#22d3a5', '#ff8c42', '#60a5fa', '#f59e0b', '#ec4899']
 
-// ── Toggle de revisão ─────────────────────────────────────────────────────────
+// ── ReviewToggle ──────────────────────────────────────────────────────────────
 
 function ReviewToggle({ enabled, onToggle }: { enabled: boolean; onToggle: () => void }) {
   return (
@@ -109,34 +109,112 @@ function DeckCard({ deck, onEdit, onDelete, onToggleReview, onMoveToFolder }: {
           fontSize: 11, cursor: 'pointer', fontFamily: 'inherit',
         }}>Ver cards</button>
         <button onClick={e => { e.stopPropagation(); onMoveToFolder() }} title="Mover para pasta" style={{
-          padding: '6px 10px',
-          background: 'transparent', border: '1px solid var(--border)',
-          borderRadius: 7, color: 'var(--text-muted)',
-          fontSize: 12, cursor: 'pointer',
+          padding: '6px 10px', background: 'transparent', border: '1px solid var(--border)',
+          borderRadius: 7, color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer',
         }}>📁</button>
         <button onClick={e => { e.stopPropagation(); onEdit() }} style={{
-          padding: '6px 10px',
-          background: 'transparent', border: '1px solid var(--border)',
-          borderRadius: 7, color: 'var(--text-muted)',
-          fontSize: 12, cursor: 'pointer',
+          padding: '6px 10px', background: 'transparent', border: '1px solid var(--border)',
+          borderRadius: 7, color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer',
         }}>✎</button>
         <button onClick={e => { e.stopPropagation(); onDelete() }} style={{
-          padding: '6px 10px',
-          background: 'transparent', border: '1px solid var(--border)',
-          borderRadius: 7, color: 'var(--red)',
-          fontSize: 12, cursor: 'pointer', opacity: 0.7,
+          padding: '6px 10px', background: 'transparent', border: '1px solid var(--border)',
+          borderRadius: 7, color: 'var(--red)', fontSize: 12, cursor: 'pointer', opacity: 0.7,
         }}>✕</button>
       </div>
     </div>
   )
 }
 
-// ── FolderTree ────────────────────────────────────────────────────────────────
+// ── FolderNode / FolderTree ───────────────────────────────────────────────────
 
-function FolderTree({ folders, selectedId, onSelect, level = 0 }: {
+function FolderNode({ folder, selectedId, onSelect, onToggleReview, level }: {
+  folder: FolderItem
+  selectedId: number | null
+  onSelect: (id: number | null) => void
+  onToggleReview: (id: number) => void
+  level: number
+}) {
+  const [open, setOpen] = useState(true)
+  const isSelected  = selectedId === folder.id
+  const hasChildren = folder.children && folder.children.length > 0
+  const enabled     = folder.reviewEnabled
+
+  return (
+    <div>
+      <div
+        onClick={() => onSelect(folder.id)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '6px 8px', paddingLeft: 10 + level * 16,
+          borderRadius: 8, cursor: 'pointer',
+          background: isSelected ? 'var(--accent-bg)' : 'transparent',
+          border: `1px solid ${isSelected ? 'var(--accent-border)' : 'transparent'}`,
+          transition: 'all 0.15s',
+          opacity: enabled ? 1 : 0.5,
+        }}
+      >
+        {hasChildren ? (
+          <span
+            onClick={e => { e.stopPropagation(); setOpen(!open) }}
+            style={{ fontSize: 10, opacity: 0.6, flexShrink: 0, cursor: 'pointer', width: 14 }}
+          >
+            {open ? '▾' : '▸'}
+          </span>
+        ) : (
+          <span style={{ width: 14, flexShrink: 0 }} />
+        )}
+
+        <span style={{ fontSize: 14 }}>{enabled ? '📁' : '📂'}</span>
+
+        <span style={{
+          fontSize: 13, fontWeight: isSelected ? 600 : 400,
+          color: isSelected ? 'var(--accent)' : 'var(--text-muted)',
+          flex: 1, minWidth: 0, overflow: 'hidden',
+          textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {folder.name}
+        </span>
+
+        {/* Toggle pill da pasta */}
+        <button
+          onClick={e => { e.stopPropagation(); onToggleReview(folder.id) }}
+          title={enabled ? 'Desativar revisão desta pasta' : 'Ativar revisão desta pasta'}
+          style={{
+            width: 28, height: 16, borderRadius: 99, position: 'relative', flexShrink: 0,
+            background: enabled ? '#22d3a5' : 'var(--border)',
+            border: 'none', cursor: 'pointer', padding: 0,
+            transition: 'background 0.2s',
+          }}
+        >
+          <div style={{
+            position: 'absolute', top: 2,
+            left: enabled ? 14 : 2,
+            width: 12, height: 12,
+            background: '#fff', borderRadius: '50%',
+            transition: 'left 0.2s',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+          }} />
+        </button>
+      </div>
+
+      {open && hasChildren && (
+        <FolderTree
+          folders={folder.children}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          onToggleReview={onToggleReview}
+          level={level + 1}
+        />
+      )}
+    </div>
+  )
+}
+
+function FolderTree({ folders, selectedId, onSelect, onToggleReview, level = 0 }: {
   folders: FolderItem[]
   selectedId: number | null
   onSelect: (id: number | null) => void
+  onToggleReview: (id: number) => void
   level?: number
 }) {
   return (
@@ -147,6 +225,7 @@ function FolderTree({ folders, selectedId, onSelect, level = 0 }: {
           folder={folder}
           selectedId={selectedId}
           onSelect={onSelect}
+          onToggleReview={onToggleReview}
           level={level}
         />
       ))}
@@ -154,62 +233,7 @@ function FolderTree({ folders, selectedId, onSelect, level = 0 }: {
   )
 }
 
-function FolderNode({ folder, selectedId, onSelect, level }: {
-  folder: FolderItem
-  selectedId: number | null
-  onSelect: (id: number | null) => void
-  level: number
-}) {
-  const [open, setOpen] = useState(true)
-  const isSelected = selectedId === folder.id
-  const hasChildren = folder.children && folder.children.length > 0
-
-  return (
-    <div>
-      <div
-        onClick={() => onSelect(folder.id)}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          padding: '6px 10px',
-          paddingLeft: 10 + level * 16,
-          borderRadius: 8, cursor: 'pointer',
-          background: isSelected ? 'var(--accent-bg)' : 'transparent',
-          border: `1px solid ${isSelected ? 'var(--accent-border)' : 'transparent'}`,
-          transition: 'all 0.15s',
-          color: isSelected ? 'var(--accent)' : 'var(--text-muted)',
-        }}
-      >
-        {hasChildren && (
-          <span
-            onClick={e => { e.stopPropagation(); setOpen(!open) }}
-            style={{ fontSize: 10, opacity: 0.6, flexShrink: 0, cursor: 'pointer' }}
-          >
-            {open ? '▾' : '▸'}
-          </span>
-        )}
-        {!hasChildren && <span style={{ width: 14, flexShrink: 0 }} />}
-        <span style={{ fontSize: 14 }}>📁</span>
-        <span style={{ fontSize: 13, fontWeight: isSelected ? 600 : 400, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {folder.name}
-        </span>
-        <span style={{ fontSize: 11, opacity: 0.4 }}>
-          {(folder.decks?.length || 0) + (folder.children?.length || 0)}
-        </span>
-      </div>
-
-      {open && hasChildren && (
-        <FolderTree
-          folders={folder.children}
-          selectedId={selectedId}
-          onSelect={onSelect}
-          level={level + 1}
-        />
-      )}
-    </div>
-  )
-}
-
-// ── Modals ────────────────────────────────────────────────────────────────────
+// ── Modal ─────────────────────────────────────────────────────────────────────
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
@@ -239,23 +263,21 @@ const inputStyle: React.CSSProperties = {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function DecksPage() {
-  const [decks, setDecks] = useState<Deck[]>([])
+  const [decks, setDecks]   = useState<Deck[]>([])
   const [folders, setFolders] = useState<FolderItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedFolder, setSelectedFolder] = useState<number | null | 'root'>('root')
 
-  // Modais
-  const [deckModal, setDeckModal] = useState<null | 'create' | Deck>(null)
+  const [deckModal, setDeckModal]     = useState<null | 'create' | Deck>(null)
   const [folderModal, setFolderModal] = useState<null | 'create' | { id: number; name: string }>(null)
-  const [moveModal, setMoveModal] = useState<Deck | null>(null)
+  const [moveModal, setMoveModal]     = useState<Deck | null>(null)
 
-  // Form states
-  const [deckName, setDeckName] = useState('')
-  const [deckDesc, setDeckDesc] = useState('')
-  const [folderName, setFolderName] = useState('')
+  const [deckName, setDeckName]           = useState('')
+  const [deckDesc, setDeckDesc]           = useState('')
+  const [folderName, setFolderName]       = useState('')
   const [folderParentId, setFolderParentId] = useState<number | ''>('')
-  const [moveFolderId, setMoveFolderId] = useState<number | ''>('')
-  const [saving, setSaving] = useState(false)
+  const [moveFolderId, setMoveFolderId]   = useState<number | ''>('')
+  const [saving, setSaving]               = useState(false)
 
   async function load() {
     try {
@@ -271,15 +293,12 @@ export default function DecksPage() {
 
   useEffect(() => { load() }, [])
 
-  // Filtra decks por pasta selecionada
-  const visibleDecks = decks.filter(d => {
-    if (selectedFolder === 'root') return d.folderId == null
-    return d.folderId === selectedFolder
-  })
+  const visibleDecks = decks.filter(d =>
+    selectedFolder === 'root' ? d.folderId == null : d.folderId === selectedFolder
+  )
 
-  // Achata a árvore de pastas para o select
-  function flattenFolders(folders: FolderItem[], depth = 0): { id: number; name: string; depth: number }[] {
-    return folders.flatMap(f => [
+  function flattenFolders(list: FolderItem[], depth = 0): { id: number; name: string; depth: number }[] {
+    return list.flatMap(f => [
       { id: f.id, name: f.name, depth },
       ...flattenFolders(f.children || [], depth + 1),
     ])
@@ -341,10 +360,19 @@ export default function DecksPage() {
     load()
   }
 
-  async function handleToggleReview(id: number) {
+  async function handleToggleDeckReview(id: number) {
     try {
       const updated = await deckService.toggleReview(id)
       setDecks(prev => prev.map(d => d.id === id ? { ...d, reviewEnabled: updated.reviewEnabled } : d))
+    } catch { /* ignore */ }
+  }
+
+  // Toggle de revisão da pasta — recarrega tudo pois propaga para decks filhos
+  async function handleToggleFolderReview(id: number) {
+    try {
+      await folderService.toggleReview(id)
+      // Recarrega decks e pastas para refletir os novos estados
+      load()
     } catch { /* ignore */ }
   }
 
@@ -356,7 +384,7 @@ export default function DecksPage() {
 
       <div style={{ paddingTop: 88, paddingLeft: 24, paddingRight: 24, paddingBottom: 60, maxWidth: 1200, margin: '0 auto', display: 'flex', gap: 24 }}>
 
-        {/* ── Sidebar de pastas ── */}
+        {/* ── Sidebar ── */}
         <div style={{
           width: 240, flexShrink: 0,
           background: 'var(--surface)', border: '1px solid var(--border)',
@@ -378,7 +406,6 @@ export default function DecksPage() {
             >+</button>
           </div>
 
-          {/* Opção "Todos" */}
           <button
             onClick={() => setSelectedFolder('root')}
             style={{
@@ -398,7 +425,6 @@ export default function DecksPage() {
             </span>
           </button>
 
-          {/* Árvore de pastas */}
           {folders.length === 0 ? (
             <div style={{ fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', padding: '16px 0' }}>
               Nenhuma pasta ainda
@@ -408,10 +434,10 @@ export default function DecksPage() {
               folders={folders}
               selectedId={typeof selectedFolder === 'number' ? selectedFolder : null}
               onSelect={id => setSelectedFolder(id)}
+              onToggleReview={handleToggleFolderReview}
             />
           )}
 
-          {/* Ações na pasta selecionada */}
           {typeof selectedFolder === 'number' && (
             <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', gap: 6 }}>
               <button
@@ -437,7 +463,7 @@ export default function DecksPage() {
           )}
         </div>
 
-        {/* ── Conteúdo principal ── */}
+        {/* ── Conteúdo ── */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32 }}>
             <div>
@@ -461,12 +487,9 @@ export default function DecksPage() {
                   style={{
                     padding: '9px 14px', background: 'var(--surface)',
                     border: '1px solid var(--border)', borderRadius: 10,
-                    color: 'var(--text-muted)', fontFamily: 'inherit',
-                    fontSize: 13, cursor: 'pointer',
+                    color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 13, cursor: 'pointer',
                   }}
-                >
-                  📁 Nova subpasta
-                </button>
+                >📁 Nova subpasta</button>
               )}
               <button
                 onClick={() => { setDeckName(''); setDeckDesc(''); setDeckModal('create') }}
@@ -475,9 +498,7 @@ export default function DecksPage() {
                   border: 'none', borderRadius: 10, color: '#fff',
                   fontFamily: 'inherit', fontSize: 13, fontWeight: 600, cursor: 'pointer',
                 }}
-              >
-                + Novo deck
-              </button>
+              >+ Novo deck</button>
             </div>
           </div>
 
@@ -505,18 +526,14 @@ export default function DecksPage() {
               >Criar deck</button>
             </div>
           ) : (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-              gap: 14,
-            }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
               {visibleDecks.map(deck => (
                 <DeckCard
                   key={deck.id}
                   deck={deck}
                   onEdit={() => { setDeckName(deck.name); setDeckDesc(deck.description || ''); setDeckModal(deck) }}
                   onDelete={() => handleDeleteDeck(deck.id)}
-                  onToggleReview={() => handleToggleReview(deck.id)}
+                  onToggleReview={() => handleToggleDeckReview(deck.id)}
                   onMoveToFolder={() => { setMoveFolderId(''); setMoveModal(deck) }}
                 />
               ))}

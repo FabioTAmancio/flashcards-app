@@ -12,7 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class FolderService {
@@ -36,10 +39,24 @@ public class FolderService {
         return toDTO(folder);
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<FolderResponseDTO> getTree(User user) {
-        List<Folder> roots = folderRepository.findByUserAndParentIsNull(user);
-        return roots.stream().map(f -> toDTOWithChildren(f, user)).toList();
+        // Busca TODAS as pastas com decks em 1 query
+        List<Folder> allFolders = folderRepository.findAllWithDecks(user);
+
+        // Count de cards em 1 query
+        Map<Long, Long> deckCountMap = deckRepository.findDecksWithCount(user)
+                .stream()
+                .collect(Collectors.toMap(DeckResponseDTO::id, DeckResponseDTO::cardCount));
+
+        // Monta a árvore em memória sem mais queries
+        Map<Long, Folder> byId = allFolders.stream()
+                .collect(Collectors.toMap(Folder::getId, f -> f));
+
+        return allFolders.stream()
+                .filter(f -> f.getParent() == null)
+                .map(f -> toDTOWithChildren(f, deckCountMap))
+                .toList();
     }
 
     public FolderResponseDTO rename(Long id, String name, User user) {
@@ -70,15 +87,18 @@ public class FolderService {
     public FolderResponseDTO toggleReview(Long id, User user) {
         Folder folder = findAndValidate(id, user);
         boolean newState = !Boolean.TRUE.equals(folder.getReviewEnabled());
-
         folder.setReviewEnabled(newState);
         folderRepository.save(folder);
 
-        propagateReviewToDecks(folder, newState);
+        List<Long> descendantFolderIds = collectDescendantIds(folder);
+        if (!descendantFolderIds.isEmpty()) {
+            folderRepository.updateReviewEnabledByParentIds(descendantFolderIds, newState);
+            deckRepository.updateReviewEnabledByFolderIds(descendantFolderIds, newState);
+        }
+        deckRepository.updateReviewEnabledByFolderIds(List.of(id), newState);
 
-        propagateReviewToSubFolders(folder, newState);
-
-        return toDTOWithChildren(folder, user);
+        // Retorna DTO simples sem carregar filhos/flashcards
+        return toDTO(folder);
     }
 
     public DeckResponseDTO moveDeckToFolder(Long deckId, Long folderId, User user) {
@@ -149,16 +169,36 @@ public class FolderService {
         }
     }
 
-    private FolderResponseDTO toDTOWithChildren(Folder folder, User user) {
+    private List<Long> collectDescendantIds(Folder folder) {
+        List<Long> ids = new ArrayList<>();
+        if (folder.getChildren() == null) return ids;
+        for (Folder child : folder.getChildren()) {
+            ids.add(child.getId());
+            ids.addAll(collectDescendantIds(child));
+        }
+        return ids;
+    }
+
+    private FolderResponseDTO toDTOWithChildren(Folder folder, Map<Long, Long> deckCountMap) {
         List<FolderResponseDTO> children = folder.getChildren() != null
                 ? folder.getChildren().stream()
-                .map(c -> toDTOWithChildren(c, user))
+                .map(c -> toDTOWithChildren(c, deckCountMap))
                 .toList()
                 : List.of();
 
         List<DeckResponseDTO> decks = folder.getDecks() != null
                 ? folder.getDecks().stream()
-                .map(deckService::toDTO)
+                .map(deck -> new DeckResponseDTO(
+                        deck.getId(),
+                        deck.getName(),
+                        deck.getDescription(),
+                        deck.getColor(),
+                        deck.getSubject(),
+                        deck.getIsPublic(),
+                        Boolean.TRUE.equals(deck.getReviewEnabled()),
+                        deckCountMap.getOrDefault(deck.getId(), 0L), // count sem lazy load
+                        folder.getId()
+                ))
                 .toList()
                 : List.of();
 

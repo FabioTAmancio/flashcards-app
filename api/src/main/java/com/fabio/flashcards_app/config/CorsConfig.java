@@ -39,48 +39,4 @@ public class CorsConfig {
         source.registerCorsConfiguration("/**", config);
         return source;
     }
-
-
-//    @Bean
-//    public CorsConfigurationSource corsConfigurationSource() {
-//
-//        CorsConfiguration config = new CorsConfiguration();
-//
-//        //Alowed Origins
-//        config.setAllowedOrigins(List.of(
-//                frontendUrl,
-//                "https://flash-dot.up.railway.app",
-//                "http://localhost:5173",
-//                "https://sua-api.up.railway.app/decks"
-//        ));
-//
-//        config.setAllowedMethods(List.of(
-//                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
-//        ));
-//
-//        config.setAllowedHeaders(List.of("*"));
-//
-//        config.setExposedHeaders(List.of("Authorization"));
-//
-//        config.setMaxAge(3600L);
-//
-//        config.setAllowCredentials(true);
-//
-//        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-//        source.registerCorsConfiguration("/**", config);
-//
-//        return source;
-//    }
-
-//    @Bean
-//    public WebMvcConfigurer corsConfigurer() {
-//        return new WebMvcConfigurer() {
-//            @Override
-//            public void addCorsMappings(CorsRegistry registry) {
-//                registry.addMapping("/**")
-//                        .allowedMethods("*")
-//                        .allowedHeaders("*");
-//            }
-//        };
-//    }
 }

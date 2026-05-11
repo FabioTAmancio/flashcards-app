@@ -22,10 +22,11 @@ spring:
       ddl-auto: none
       jdbc:
         time_zone: America/Sao_Paulo
-    show-sql: false
+    show-sql: true
     properties:
       hibernate:
         format_sql: false
+        default_batch_fetch_size: 30
     open-in-view: false
 
   flyway:

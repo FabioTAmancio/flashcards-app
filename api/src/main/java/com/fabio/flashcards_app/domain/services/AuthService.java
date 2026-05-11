@@ -59,7 +59,7 @@ public class AuthService {
         User user = userRepository.findByEmail(dto.email())
                 .orElseThrow(() -> new RuntimeException("Email not found"));
 
-        // auth password
+
         if (!passwordEncoder.matches(dto.password(), user.getPassword())) {
             throw new RuntimeException("Wrong password");
         }

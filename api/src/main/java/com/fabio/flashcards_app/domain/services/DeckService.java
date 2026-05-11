@@ -104,7 +104,6 @@ public class DeckService {
     }
 
     public DeckResponseDTO toDTO(Deck deck) {
-        long cardCount = deck.getFlashcards() != null ? deck.getFlashcards().size() : 0;
         return new DeckResponseDTO(
                 deck.getId(),
                 deck.getName(),
@@ -113,7 +112,7 @@ public class DeckService {
                 deck.getSubject(),
                 deck.getIsPublic(),
                 Boolean.TRUE.equals(deck.getReviewEnabled()),
-                cardCount,
+                0L,
                 deck.getFolder() != null ? deck.getFolder().getId() : null
         );
     }

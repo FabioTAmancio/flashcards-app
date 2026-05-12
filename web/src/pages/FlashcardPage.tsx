@@ -420,7 +420,7 @@ export default function FlashcardPage() {
               {loading ? '—' : `${cards.length} card${cards.length !== 1 ? 's' : ''}`}
             </p>
           </div>
-          <button onClick={() => setModal('create')} style={{
+          <button onClick={() => navigate(`/flashcards/create/${id}`)} style={{
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '10px 18px',
             background: 'var(--accent)', border: 'none',
@@ -442,7 +442,7 @@ export default function FlashcardPage() {
         ) : cards.length === 0 ? (
           <div style={{ textAlign: 'center', paddingTop: 80 }}>
             <p style={{ color: 'var(--text-muted)', marginBottom: 20 }}>Nenhum card neste deck ainda.</p>
-            <button onClick={() => setModal('create')} style={{
+            <button onClick={() => navigate(`/flashcards/create/${id}`)} style={{
               padding: '10px 24px', background: 'var(--accent)', border: 'none',
               borderRadius: 10, color: '#fff', fontFamily: 'inherit',
               fontSize: 14, fontWeight: 600, cursor: 'pointer',

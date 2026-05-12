@@ -1,13 +1,20 @@
 :root {
   --text: #6b6375;
   --text-h: #08060d;
+  --text-muted: #8b8496;
+  --text-faint: #b0a9bb;
   --bg: #fff;
+  --surface: #fafaf9;
+  --surface2: #f4f3f6;
   --border: #e5e4e7;
+  --border2: #d4d2d8;
   --code-bg: #f4f3ec;
   --accent: #aa3bff;
   --accent-bg: rgba(170, 59, 255, 0.1);
   --accent-border: rgba(170, 59, 255, 0.5);
   --social-bg: rgba(244, 243, 236, 0.5);
+  --red: #ef4444;
+  --blue: #60a5fa;
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
@@ -34,13 +41,20 @@
   :root {
     --text: #9ca3af;
     --text-h: #f3f4f6;
+    --text-muted: #6b7280;
+    --text-faint: #4b5563;
     --bg: #16171d;
+    --surface: #1e1f27;
+    --surface2: #252630;
     --border: #2e303a;
+    --border2: #3a3c48;
     --code-bg: #1f2028;
     --accent: #c084fc;
     --accent-bg: rgba(192, 132, 252, 0.15);
     --accent-border: rgba(192, 132, 252, 0.5);
     --social-bg: rgba(47, 48, 58, 0.5);
+    --red: #f87171;
+    --blue: #93c5fd;
     --shadow:
       rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
   }
@@ -93,6 +107,15 @@ h2 {
 }
 p {
   margin: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 code,

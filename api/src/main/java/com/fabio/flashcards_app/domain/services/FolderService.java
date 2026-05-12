@@ -117,9 +117,43 @@ public class FolderService {
         return deckService.toDTO(deck);
     }
 
-    public void delete(Long id, User user) {
+    @Transactional
+    public void delete(Long id, boolean cascade, User user) {
         Folder folder = findAndValidate(id, user);
+
+        if (cascade) {
+            // Deleta recursivamente decks (e seus flashcards via CascadeType.ALL) de todas as subpastas
+            deleteFolderContentsRecursive(folder);
+        } else {
+            // Solta os decks — remove o vínculo com a pasta, ficam na raiz
+            List<Deck> decks = deckRepository.findByFolder(folder);
+            for (Deck deck : decks) {
+                deck.setFolder(null);
+                deckRepository.save(deck);
+            }
+            // Solta as subpastas — move para raiz
+            if (folder.getChildren() != null) {
+                for (Folder child : folder.getChildren()) {
+                    child.setParent(null);
+                    folderRepository.save(child);
+                }
+            }
+        }
+
         folderRepository.delete(folder);
+    }
+
+    private void deleteFolderContentsRecursive(Folder folder) {
+        // Processa subpastas primeiro (recursivo)
+        if (folder.getChildren() != null) {
+            for (Folder child : folder.getChildren()) {
+                deleteFolderContentsRecursive(child);
+                folderRepository.delete(child);
+            }
+        }
+        // Deleta todos os decks (e seus flashcards via cascade) da pasta atual
+        List<Deck> decks = deckRepository.findByFolder(folder);
+        deckRepository.deleteAll(decks);
     }
 
     // HELPERS

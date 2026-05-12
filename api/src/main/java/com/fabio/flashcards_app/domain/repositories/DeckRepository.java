@@ -10,9 +10,13 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
+import com.fabio.flashcards_app.domain.models.Folder;
+
 public interface DeckRepository extends JpaRepository<Deck, Long> {
 
     List<Deck> findByUser(User user);
+
+    List<Deck> findByFolder(Folder folder);
 
     @Query(value = """
     SELECT new com.fabio.flashcards_app.data.dto.deck.DeckResponseDTO(

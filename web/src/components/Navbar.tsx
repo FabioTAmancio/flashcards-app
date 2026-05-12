@@ -71,11 +71,39 @@ export default function Navbar() {
       </div>
 
       {/* User */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {user && (
-          <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            {user.name}
-          </span>
+          <Link to="/profile" style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            textDecoration: 'none',
+            padding: '4px 10px 4px 4px',
+            borderRadius: 99,
+            border: '1px solid var(--border)',
+            background: 'var(--surface2)',
+            transition: 'all 0.15s',
+          }}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--border2)')}
+            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+          >
+            {/* mini avatar */}
+            <div style={{
+              width: 26, height: 26, borderRadius: '50%',
+              background: 'var(--accent-bg)', border: '1px solid var(--accent-border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              overflow: 'hidden', flexShrink: 0,
+            }}>
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)' }}>
+                  {user.name?.charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
+            <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 }}>
+              {user.name}
+            </span>
+          </Link>
         )}
         <button onClick={handleLogout} style={{
           background: 'var(--surface2)',

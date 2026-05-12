@@ -55,7 +55,7 @@ export const folderService = {
         return data
     },
 
-    delete: async (id: number): Promise<void> => {
-        await api.delete(`/folders/${id}`)
+    delete: async (id: number, cascade: boolean = false): Promise<void> => {
+        await api.delete(`/folders/${id}`, { params: { cascade } })
     },
 }

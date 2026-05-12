@@ -5,8 +5,8 @@ export const deckService = {
     const { data } = await api.get('/decks')
     return data
   },
-  create: async (name: string, description: string, color?: string) => {
-    const { data } = await api.post('/decks', { name, description, color })
+  create: async (name: string, description: string, color?: string, folderId?: number) => {
+    const { data } = await api.post('/decks', { name, description, color, folderId })
     return data
   },
   update: async (id: number, name: string, description: string, color?: string) => {

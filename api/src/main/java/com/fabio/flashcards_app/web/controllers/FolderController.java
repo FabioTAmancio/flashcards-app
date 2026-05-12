@@ -80,9 +80,10 @@ public class FolderController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable Long id,
+            @RequestParam(defaultValue = "false") boolean cascade,
             @AuthenticationPrincipal User user
     ) {
-        folderService.delete(id, user);
+        folderService.delete(id, cascade, user);
         return ResponseEntity.noContent().build();
     }
 }

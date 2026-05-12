@@ -270,10 +270,13 @@ export default function DecksPage() {
 
   const [deckModal, setDeckModal]     = useState<null | 'create' | Deck>(null)
   const [folderModal, setFolderModal] = useState<null | 'create' | { id: number; name: string }>(null)
+  const [deleteFolderModal, setDeleteFolderModal] = useState<{ id: number; name: string } | null>(null)
+  const [deleteFolderLoading, setDeleteFolderLoading] = useState(false)
   const [moveModal, setMoveModal]     = useState<Deck | null>(null)
 
   const [deckName, setDeckName]           = useState('')
   const [deckDesc, setDeckDesc]           = useState('')
+  const [deckTargetFolder, setDeckTargetFolder] = useState<number | null>(null)
   const [folderName, setFolderName]       = useState('')
   const [folderParentId, setFolderParentId] = useState<number | ''>('')
   const [moveFolderId, setMoveFolderId]   = useState<number | ''>('')
@@ -310,7 +313,8 @@ export default function DecksPage() {
     setSaving(true)
     try {
       if (deckModal === 'create') {
-        await deckService.create(deckName.trim(), deckDesc.trim())
+        const folderId = deckTargetFolder ?? undefined
+        await deckService.create(deckName.trim(), deckDesc.trim(), undefined, folderId)
       } else if (deckModal && typeof deckModal !== 'string') {
         await deckService.update(deckModal.id, deckName.trim(), deckDesc.trim())
       }
@@ -354,10 +358,24 @@ export default function DecksPage() {
   }
 
   async function handleDeleteFolder(id: number) {
-    if (!confirm('Excluir esta pasta? Os decks dentro ficarão soltos.')) return
-    await folderService.delete(id)
-    if (selectedFolder === id) setSelectedFolder('root')
-    load()
+    const folder = allFolders.find(f => f.id === id)
+    if (!folder) return
+    setDeleteFolderModal({ id, name: folder.name })
+  }
+
+  async function confirmDeleteFolder(cascade: boolean) {
+    if (!deleteFolderModal) return
+    setDeleteFolderLoading(true)
+    try {
+      await folderService.delete(deleteFolderModal.id, cascade)
+      if (selectedFolder === deleteFolderModal.id) setSelectedFolder('root')
+      setDeleteFolderModal(null)
+      load()
+    } catch {
+      /* ignore */
+    } finally {
+      setDeleteFolderLoading(false)
+    }
   }
 
   async function handleToggleDeckReview(id: number) {
@@ -492,7 +510,7 @@ export default function DecksPage() {
                 >📁 Nova subpasta</button>
               )}
               <button
-                onClick={() => { setDeckName(''); setDeckDesc(''); setDeckModal('create') }}
+                onClick={() => { setDeckName(''); setDeckDesc(''); setDeckTargetFolder(typeof selectedFolder === 'number' ? selectedFolder : null); setDeckModal('create') }}
                 style={{
                   padding: '9px 16px', background: 'var(--accent)',
                   border: 'none', borderRadius: 10, color: '#fff',
@@ -517,7 +535,7 @@ export default function DecksPage() {
                 {selectedFolder === 'root' ? 'Nenhum deck sem pasta.' : 'Nenhum deck nesta pasta.'}
               </p>
               <button
-                onClick={() => { setDeckName(''); setDeckDesc(''); setDeckModal('create') }}
+                onClick={() => { setDeckName(''); setDeckDesc(''); setDeckTargetFolder(typeof selectedFolder === 'number' ? selectedFolder : null); setDeckModal('create') }}
                 style={{
                   padding: '10px 24px', background: 'var(--accent)', border: 'none',
                   borderRadius: 10, color: '#fff', fontFamily: 'inherit',
@@ -546,6 +564,16 @@ export default function DecksPage() {
       {deckModal && (
         <Modal title={deckModal === 'create' ? 'Novo Deck' : 'Editar Deck'} onClose={() => setDeckModal(null)}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {deckModal === 'create' && (
+              <div style={{ padding: '8px 12px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>📁</span>
+                <span>
+                  Será criado em: <strong style={{ color: 'var(--text)' }}>
+                    {deckTargetFolder ? (allFolders.find(f => f.id === deckTargetFolder)?.name ?? 'Pasta') : 'Sem pasta (raiz)'}
+                  </strong>
+                </span>
+              </div>
+            )}
             <div>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nome</label>
               <input value={deckName} onChange={e => setDeckName(e.target.value)} placeholder="Ex: Inglês B2" style={inputStyle}
@@ -630,6 +658,88 @@ export default function DecksPage() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* ── Modal: deletar pasta ── */}
+      {deleteFolderModal && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+          onClick={() => !deleteFolderLoading && setDeleteFolderModal(null)}
+        >
+          <div
+            style={{ background: 'var(--surface)', border: '1px solid var(--border2)', borderRadius: 18, padding: 28, maxWidth: 420, width: '100%' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Ícone + título */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
+                🗑
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text-h)' }}>Excluir pasta</div>
+                <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+                  "{deleteFolderModal.name}"
+                </div>
+              </div>
+            </div>
+
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, margin: '16px 0', padding: '12px 14px', background: 'var(--surface2)', borderRadius: 10, border: '1px solid var(--border)' }}>
+              O que deseja fazer com os <strong style={{ color: 'var(--text)' }}>decks e subpastas</strong> dentro desta pasta?
+            </p>
+
+            {/* Opção 1: Deixar soltos */}
+            <button
+              disabled={deleteFolderLoading}
+              onClick={() => confirmDeleteFolder(false)}
+              style={{
+                width: '100%', padding: '14px 16px', marginBottom: 10,
+                background: 'var(--surface2)', border: '1px solid var(--border)',
+                borderRadius: 12, cursor: deleteFolderLoading ? 'not-allowed' : 'pointer',
+                textAlign: 'left', fontFamily: 'inherit', transition: 'border-color 0.15s',
+                opacity: deleteFolderLoading ? 0.6 : 1,
+              }}
+              onMouseEnter={e => !deleteFolderLoading && (e.currentTarget.style.borderColor = 'var(--border2)')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+            >
+              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-h)', marginBottom: 3 }}>
+                📂 Deixar os decks soltos
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                A pasta é removida, mas os decks e subpastas permanecem na raiz. Nenhum card é perdido.
+              </div>
+            </button>
+
+            {/* Opção 2: Apagar tudo */}
+            <button
+              disabled={deleteFolderLoading}
+              onClick={() => confirmDeleteFolder(true)}
+              style={{
+                width: '100%', padding: '14px 16px', marginBottom: 20,
+                background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.2)',
+                borderRadius: 12, cursor: deleteFolderLoading ? 'not-allowed' : 'pointer',
+                textAlign: 'left', fontFamily: 'inherit', transition: 'border-color 0.15s',
+                opacity: deleteFolderLoading ? 0.6 : 1,
+              }}
+              onMouseEnter={e => !deleteFolderLoading && (e.currentTarget.style.borderColor = 'rgba(239,68,68,0.4)')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(239,68,68,0.2)')}
+            >
+              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--red)', marginBottom: 3 }}>
+                🗑 Apagar tudo dentro
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                Remove a pasta, todos os decks, subpastas e <strong style={{ color: 'var(--red)' }}>todos os cards</strong> permanentemente. Essa ação não pode ser desfeita.
+              </div>
+            </button>
+
+            <button
+              disabled={deleteFolderLoading}
+              onClick={() => setDeleteFolderModal(null)}
+              style={{ width: '100%', padding: '10px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 14, cursor: 'pointer' }}
+            >
+              {deleteFolderLoading ? 'Aguarde...' : 'Cancelar'}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )

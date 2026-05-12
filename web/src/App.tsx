@@ -8,6 +8,7 @@ import ImportPage from './pages/ImportPage'
 import StatsPage from './pages/StatsPage'
 import ProfilePage from './pages/ProfilePage'
 import AnkiImportPage from './pages/AnkiImportPage'
+import CreateFlashcardPage from './pages/CreateFlashcardPage'
 import EmailBanner from './components/EmailBanner'
 import { useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
@@ -48,7 +49,8 @@ function AppRoutes() {
         <Route path="/stats" element={<PrivateRoute><StatsPage /></PrivateRoute>} />
         <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
         <Route path="/import/anki" element={<PrivateRoute><AnkiImportPage /></PrivateRoute>} />
-        
+        <Route path="/flashcards/create" element={<PrivateRoute><CreateFlashcardPage /></PrivateRoute>} />
+        <Route path="/flashcards/create/:deckId" element={<PrivateRoute><CreateFlashcardPage /></PrivateRoute>} />
         {/* Any unknown route -> root (which redirects according to auth) */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

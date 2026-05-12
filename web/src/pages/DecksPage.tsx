@@ -274,6 +274,7 @@ export default function DecksPage() {
 
   const [deckName, setDeckName]           = useState('')
   const [deckDesc, setDeckDesc]           = useState('')
+  const [deckTargetFolder, setDeckTargetFolder] = useState<number | null>(null)
   const [folderName, setFolderName]       = useState('')
   const [folderParentId, setFolderParentId] = useState<number | ''>('')
   const [moveFolderId, setMoveFolderId]   = useState<number | ''>('')
@@ -310,7 +311,8 @@ export default function DecksPage() {
     setSaving(true)
     try {
       if (deckModal === 'create') {
-        await deckService.create(deckName.trim(), deckDesc.trim())
+        const folderId = deckTargetFolder ?? undefined
+        await deckService.create(deckName.trim(), deckDesc.trim(), undefined, folderId)
       } else if (deckModal && typeof deckModal !== 'string') {
         await deckService.update(deckModal.id, deckName.trim(), deckDesc.trim())
       }
@@ -492,7 +494,7 @@ export default function DecksPage() {
                 >📁 Nova subpasta</button>
               )}
               <button
-                onClick={() => { setDeckName(''); setDeckDesc(''); setDeckModal('create') }}
+                onClick={() => { setDeckName(''); setDeckDesc(''); setDeckTargetFolder(typeof selectedFolder === 'number' ? selectedFolder : null); setDeckModal('create') }}
                 style={{
                   padding: '9px 16px', background: 'var(--accent)',
                   border: 'none', borderRadius: 10, color: '#fff',
@@ -517,7 +519,7 @@ export default function DecksPage() {
                 {selectedFolder === 'root' ? 'Nenhum deck sem pasta.' : 'Nenhum deck nesta pasta.'}
               </p>
               <button
-                onClick={() => { setDeckName(''); setDeckDesc(''); setDeckModal('create') }}
+                onClick={() => { setDeckName(''); setDeckDesc(''); setDeckTargetFolder(typeof selectedFolder === 'number' ? selectedFolder : null); setDeckModal('create') }}
                 style={{
                   padding: '10px 24px', background: 'var(--accent)', border: 'none',
                   borderRadius: 10, color: '#fff', fontFamily: 'inherit',
@@ -546,6 +548,16 @@ export default function DecksPage() {
       {deckModal && (
         <Modal title={deckModal === 'create' ? 'Novo Deck' : 'Editar Deck'} onClose={() => setDeckModal(null)}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {deckModal === 'create' && (
+              <div style={{ padding: '8px 12px', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span>📁</span>
+                <span>
+                  Será criado em: <strong style={{ color: 'var(--text)' }}>
+                    {deckTargetFolder ? (allFolders.find(f => f.id === deckTargetFolder)?.name ?? 'Pasta') : 'Sem pasta (raiz)'}
+                  </strong>
+                </span>
+              </div>
+            )}
             <div>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Nome</label>
               <input value={deckName} onChange={e => setDeckName(e.target.value)} placeholder="Ex: Inglês B2" style={inputStyle}

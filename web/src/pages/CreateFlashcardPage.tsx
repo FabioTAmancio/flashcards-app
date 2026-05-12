@@ -262,7 +262,7 @@ export default function CreateFlashcardPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
 
-  const [deck, setDeck] = useState<Deck | null>(null)
+  const [, setDeck] = useState<Deck | null>(null)
   const [decks, setDecks] = useState<Deck[]>([])
   const [selectedDeckId, setSelectedDeckId] = useState<number>(Number(deckId) || 0)
   const [loadingDecks, setLoadingDecks] = useState(true)

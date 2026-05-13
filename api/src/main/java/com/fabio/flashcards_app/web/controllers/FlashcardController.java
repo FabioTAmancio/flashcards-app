@@ -59,12 +59,13 @@ public class FlashcardController {
     }
 
     // update all
-    @PutMapping("")
+    @PutMapping("/{id}")
     public ResponseEntity<FlashcardResponseDTO> update(
+            @PathVariable Long id,
             @RequestBody FlashcardRequestDTO dto,
             @AuthenticationPrincipal User user
     ) {
-        return ResponseEntity.ok(service.update(dto.deckId(), dto, user));
+        return ResponseEntity.ok(service.update(id, dto, user));
     }
 
     // delete

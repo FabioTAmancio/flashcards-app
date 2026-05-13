@@ -48,7 +48,7 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity
                     .status(302)
-                    .header("Location", frontendUrl, "/decks?verified=false")
+                    .header("Location", frontendUrl + "/login?verified=false&reason=" + e.getMessage())
                     .build();
         }
     }

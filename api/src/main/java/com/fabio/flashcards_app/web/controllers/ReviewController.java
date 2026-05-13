@@ -22,9 +22,10 @@ public class ReviewController {
     @GetMapping("/due")
     public ResponseEntity<List<FlashcardResponseDTO>> getDue(
             @RequestParam(required = false) Long deckId,
+            @RequestParam(required = false) Long folderId,
             @AuthenticationPrincipal User user
     ) {
-        return ResponseEntity.ok(reviewService.getDueFlashcards(user, deckId));
+        return ResponseEntity.ok(reviewService.getDueFlashcards(user, deckId, folderId));
     }
 
     @PostMapping("/{flashcardId}")

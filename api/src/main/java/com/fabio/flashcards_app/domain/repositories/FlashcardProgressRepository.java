@@ -5,8 +5,10 @@ import com.fabio.flashcards_app.domain.models.FlashcardProgress;
 import com.fabio.flashcards_app.domain.models.User;
 import com.fabio.flashcards_app.domain.models.enums.CardStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,6 +16,8 @@ import java.util.Optional;
 
 public interface FlashcardProgressRepository extends JpaRepository<FlashcardProgress, Long> {
 
+    @Modifying
+    @Transactional
     void deleteByFlashcard(Flashcard flashcard);
 
     Optional<FlashcardProgress> findByUserIdAndFlashcardId(Long userId, Long flashcardId);
@@ -46,6 +50,19 @@ public interface FlashcardProgressRepository extends JpaRepository<FlashcardProg
             @Param("user") User user,
             @Param("now") LocalDateTime now,
             @Param("deckId") Long deckId
+    );
+
+    @Query("""
+        SELECT fp FROM FlashcardProgress fp
+        WHERE fp.user = :user
+          AND fp.nextReview <= :now
+          AND fp.flashcard.deck.folder.id = :folderId
+          AND fp.flashcard.deck.reviewEnabled = true
+    """)
+    List<FlashcardProgress> findDueForUserAndFolder(
+            @Param("user") User user,
+            @Param("now") LocalDateTime now,
+            @Param("folderId") Long folderId
     );
 
     long countByUserAndStatus(User user, CardStatus status);

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Navbar from '../components/Navbar'
 import { deckService, reviewService } from '../services/deck.service'
+import { folderService, type FolderItem } from '../services/folder.service'
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
@@ -9,7 +10,12 @@ type Flashcard = {
   id: number; front: string; back: string; subject?: string
   frontImageUrl?: string; backImageUrl?: string; cardType?: string
 }
-type Deck = { id: number; name: string; reviewEnabled: boolean }
+type Deck = { id: number; name: string; reviewEnabled: boolean; folderId?: number | null; cardCount?: number }
+
+type ReviewScope =
+  | { type: 'all' }
+  | { type: 'deck';   id: number; name: string }
+  | { type: 'folder'; id: number; name: string }
 
 const QUALITY_BTNS = [
   { label: 'Errei',   sublabel: 'Rever agora',     value: 0, color: 'var(--red)',    bg: 'rgba(255,77,109,0.08)',   border: 'rgba(255,77,109,0.25)',  key: '1' },
@@ -109,41 +115,228 @@ function DiffDisplay({ input, expected }: { input: string; expected: string }) {
   )
 }
 
-// ── Seletor de deck ────────────────────────────────────────────────────────────
+// ── ScopeSelector ──────────────────────────────────────────────────────────────
 
-function DeckSelector({ decks, selected, onSelect }: {
-  decks: Deck[]; selected: number | null; onSelect: (id: number | null) => void
+function ScopeSelector({ decks, folders, scope, onSelect }: {
+  decks: Deck[]
+  folders: FolderItem[]
+  scope: ReviewScope
+  onSelect: (s: ReviewScope) => void
 }) {
-  const enabled = decks.filter(d => d.reviewEnabled)
+  const [tab, setTab]       = useState<'decks' | 'folders'>('decks')
+  const [search, setSearch] = useState('')
+  const [open, setOpen]     = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  // Fecha ao clicar fora
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const enabledDecks   = decks.filter(d => d.reviewEnabled)
+  const filteredDecks  = enabledDecks.filter(d => d.name.toLowerCase().includes(search.toLowerCase()))
+
+  function flatFolders(list: FolderItem[], depth = 0): { folder: FolderItem; depth: number }[] {
+    return list.flatMap(f => [{ folder: f, depth }, ...flatFolders(f.children || [], depth + 1)])
+  }
+  const allFolders     = flatFolders(folders)
+  const filteredFolders = allFolders.filter(({ folder }) =>
+    folder.name.toLowerCase().includes(search.toLowerCase())
+  )
+
+  const scopeLabel =
+    scope.type === 'all'    ? 'Todos os decks' :
+    scope.type === 'deck'   ? `▦ ${scope.name}` :
+    `📁 ${scope.name}`
+
   return (
-    <div style={{ width: '100%', maxWidth: 600, marginBottom: 28 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 10 }}>
-        Revisar deck
+    <div ref={ref} style={{ width: '100%', maxWidth: 600, marginBottom: 28, position: 'relative' }}>
+      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 8 }}>
+        Revisar
       </div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button onClick={() => onSelect(null)} style={{
-          padding: '7px 14px', borderRadius: 99,
-          border: `1px solid ${selected === null ? 'var(--accent-border)' : 'var(--border)'}`,
-          background: selected === null ? 'var(--accent-bg)' : 'transparent',
-          color: selected === null ? 'var(--accent)' : 'var(--text-muted)',
-          fontFamily: 'inherit', fontSize: 13, fontWeight: selected === null ? 600 : 400,
-          cursor: 'pointer', transition: 'all 0.15s',
-        }}>
-          Todos os decks
-        </button>
-        {enabled.map(d => (
-          <button key={d.id} onClick={() => onSelect(d.id)} style={{
-            padding: '7px 14px', borderRadius: 99,
-            border: `1px solid ${selected === d.id ? 'var(--accent-border)' : 'var(--border)'}`,
-            background: selected === d.id ? 'var(--accent-bg)' : 'transparent',
-            color: selected === d.id ? 'var(--accent)' : 'var(--text-muted)',
-            fontFamily: 'inherit', fontSize: 13, fontWeight: selected === d.id ? 600 : 400,
-            cursor: 'pointer', transition: 'all 0.15s',
+
+      {/* Botão disparador */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', padding: '11px 16px',
+          background: 'var(--surface)', border: `1px solid ${open ? 'var(--accent-border)' : 'var(--border2)'}`,
+          borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          transition: 'border-color 0.15s',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 28, height: 28, borderRadius: 7, flexShrink: 0,
+            background: scope.type === 'all' ? 'var(--accent-bg)' : scope.type === 'folder' ? 'rgba(96,165,250,0.1)' : 'rgba(34,211,165,0.1)',
+            border: `1px solid ${scope.type === 'all' ? 'var(--accent-border)' : scope.type === 'folder' ? 'rgba(96,165,250,0.25)' : 'rgba(34,211,165,0.25)'}`,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13,
           }}>
-            {d.name}
-          </button>
-        ))}
-      </div>
+            {scope.type === 'all' ? '⊞' : scope.type === 'folder' ? '📁' : '▦'}
+          </div>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-h)' }}>{scopeLabel}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>
+              {scope.type === 'all'
+                ? `${enabledDecks.length} deck${enabledDecks.length !== 1 ? 's' : ''} habilitados`
+                : scope.type === 'deck'
+                ? (() => { const d = decks.find(d => d.id === (scope as { type: 'deck'; id: number; name: string }).id); return d?.cardCount !== undefined ? `${d.cardCount} cards` : 'deck selecionado' })()
+                : 'pasta selecionada'
+              }
+            </div>
+          </div>
+        </div>
+        <span style={{ fontSize: 12, color: 'var(--text-faint)', transition: 'transform 0.15s', transform: open ? 'rotate(180deg)' : 'none' }}>▾</span>
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, zIndex: 100,
+          background: 'var(--surface)', border: '1px solid var(--border2)',
+          borderRadius: 14, overflow: 'hidden',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.25)',
+          animation: 'fadeUp 0.15s ease',
+        }}>
+          {/* Busca */}
+          <div style={{ padding: '12px 12px 8px', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: 'var(--text-faint)', pointerEvents: 'none' }}>🔍</span>
+              <input
+                autoFocus
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Buscar deck ou pasta..."
+                style={{
+                  width: '100%', padding: '8px 10px 8px 28px',
+                  background: 'var(--surface2)', border: '1px solid var(--border)',
+                  borderRadius: 8, color: 'var(--text)', fontFamily: 'inherit',
+                  fontSize: 13, outline: 'none', boxSizing: 'border-box',
+                }}
+                onFocus={e => (e.target.style.borderColor = 'var(--accent-border)')}
+                onBlur={e => (e.target.style.borderColor = 'var(--border)')}
+              />
+              {search && (
+                <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', fontSize: 12, padding: 0 }}>✕</button>
+              )}
+            </div>
+          </div>
+
+          {/* Abas */}
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', padding: '0 12px' }}>
+            {(['decks', 'folders'] as const).map(t => (
+              <button key={t} onClick={() => setTab(t)} style={{
+                padding: '10px 14px', background: 'none', border: 'none',
+                borderBottom: `2px solid ${tab === t ? 'var(--accent)' : 'transparent'}`,
+                color: tab === t ? 'var(--accent)' : 'var(--text-muted)',
+                fontFamily: 'inherit', fontSize: 12, fontWeight: tab === t ? 600 : 400,
+                cursor: 'pointer', transition: 'all 0.15s', marginBottom: -1,
+              }}>
+                {t === 'decks' ? `▦ Decks (${enabledDecks.length})` : `📁 Pastas (${allFolders.length})`}
+              </button>
+            ))}
+          </div>
+
+          {/* Lista */}
+          <div style={{ maxHeight: 280, overflowY: 'auto', padding: 8 }}>
+            {/* Opção "Todos" — sempre visível */}
+            {!search && (
+              <button
+                onClick={() => { onSelect({ type: 'all' }); setOpen(false); setSearch('') }}
+                style={{
+                  width: '100%', padding: '10px 12px', borderRadius: 9, border: 'none',
+                  background: scope.type === 'all' ? 'var(--accent-bg)' : 'transparent',
+                  cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  transition: 'background 0.1s', marginBottom: 4,
+                }}
+                onMouseEnter={e => { if (scope.type !== 'all') e.currentTarget.style.background = 'var(--surface2)' }}
+                onMouseLeave={e => { if (scope.type !== 'all') e.currentTarget.style.background = 'transparent' }}
+              >
+                <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--accent-bg)', border: '1px solid var(--accent-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>⊞</div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: scope.type === 'all' ? 'var(--accent)' : 'var(--text)' }}>Todos os decks</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>{enabledDecks.length} habilitados para revisão</div>
+                </div>
+                {scope.type === 'all' && <span style={{ marginLeft: 'auto', color: 'var(--accent)', fontSize: 14 }}>✓</span>}
+              </button>
+            )}
+
+            {tab === 'decks' ? (
+              filteredDecks.length === 0 ? (
+                <div style={{ padding: '24px 12px', textAlign: 'center', fontSize: 13, color: 'var(--text-faint)' }}>
+                  {search ? `Nenhum deck para "${search}"` : 'Nenhum deck habilitado'}
+                </div>
+              ) : filteredDecks.map(deck => {
+                const isActive = scope.type === 'deck' && scope.id === deck.id
+                return (
+                  <button key={deck.id}
+                    onClick={() => { onSelect({ type: 'deck', id: deck.id, name: deck.name }); setOpen(false); setSearch('') }}
+                    style={{
+                      width: '100%', padding: '9px 12px', borderRadius: 9, border: 'none',
+                      background: isActive ? 'var(--accent-bg)' : 'transparent',
+                      cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                      display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.1s',
+                    }}
+                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--surface2)' }}
+                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <div style={{ width: 30, height: 30, borderRadius: 8, background: 'rgba(34,211,165,0.08)', border: '1px solid rgba(34,211,165,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, flexShrink: 0 }}>▦</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: isActive ? 600 : 400, color: isActive ? 'var(--accent)' : 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {deck.name}
+                      </div>
+                      {deck.cardCount !== undefined && (
+                        <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>{deck.cardCount} cards</div>
+                      )}
+                    </div>
+                    {isActive && <span style={{ color: 'var(--accent)', fontSize: 14, flexShrink: 0 }}>✓</span>}
+                  </button>
+                )
+              })
+            ) : (
+              filteredFolders.length === 0 ? (
+                <div style={{ padding: '24px 12px', textAlign: 'center', fontSize: 13, color: 'var(--text-faint)' }}>
+                  {search ? `Nenhuma pasta para "${search}"` : 'Nenhuma pasta criada'}
+                </div>
+              ) : filteredFolders.map(({ folder, depth }) => {
+                const isActive = scope.type === 'folder' && scope.id === folder.id
+                return (
+                  <button key={folder.id}
+                    onClick={() => { onSelect({ type: 'folder', id: folder.id, name: folder.name }); setOpen(false); setSearch('') }}
+                    style={{
+                      width: '100%', padding: '9px 12px', paddingLeft: 12 + depth * 16,
+                      borderRadius: 9, border: 'none',
+                      background: isActive ? 'rgba(96,165,250,0.08)' : 'transparent',
+                      cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+                      display: 'flex', alignItems: 'center', gap: 10, transition: 'background 0.1s',
+                    }}
+                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--surface2)' }}
+                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <span style={{ fontSize: 16, flexShrink: 0 }}>📁</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: isActive ? 600 : 400, color: isActive ? '#60a5fa' : 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {folder.name}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>
+                        {(folder.decks?.length ?? 0)} deck{folder.decks?.length !== 1 ? 's' : ''}
+                        {folder.children?.length > 0 && ` · ${folder.children.length} subpasta${folder.children.length !== 1 ? 's' : ''}`}
+                      </div>
+                    </div>
+                    {isActive && <span style={{ color: '#60a5fa', fontSize: 14, flexShrink: 0 }}>✓</span>}
+                  </button>
+                )
+              })
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -154,23 +347,26 @@ export default function ReviewPage() {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const [decks, setDecks] = useState<Deck[]>([])
-  const [selectedDeck, setSelectedDeck] = useState<number | null>(null)
-  const [cards, setCards] = useState<Flashcard[]>([])
+  const [decks, setDecks]     = useState<Deck[]>([])
+  const [folders, setFolders] = useState<FolderItem[]>([])
+  const [scope, setScope]     = useState<ReviewScope>({ type: 'all' })
+  const [cards, setCards]     = useState<Flashcard[]>([])
   const [current, setCurrent] = useState(0)
-  const [showBack, setShowBack] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [flipping, setFlipping] = useState(false)
+  const [showBack, setShowBack]   = useState(false)
+  const [loading, setLoading]     = useState(true)
+  const [flipping, setFlipping]   = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [sessionDone, setSessionDone] = useState(false)
 
   // QA mode state
-  const [userAnswer, setUserAnswer] = useState('')
+  const [userAnswer, setUserAnswer]           = useState('')
   const [answerSubmitted, setAnswerSubmitted] = useState(false)
   const [suggestedQuality, setSuggestedQuality] = useState<number | null>(null)
 
   useEffect(() => {
-    deckService.getAll().then(setDecks).catch(console.error)
+    Promise.all([deckService.getAll(), folderService.getTree()])
+      .then(([d, f]) => { setDecks(d); setFolders(f) })
+      .catch(console.error)
   }, [])
 
   useEffect(() => {
@@ -181,11 +377,19 @@ export default function ReviewPage() {
     setSessionDone(false)
     setUserAnswer('')
     setAnswerSubmitted(false)
-    reviewService.getDueFlashcards(selectedDeck ?? undefined)
+
+    const params: Record<string, number> = {}
+    if (scope.type === 'deck')   params.deckId   = scope.id
+    if (scope.type === 'folder') params.folderId = scope.id
+
+    reviewService.getDueFlashcards(
+      scope.type === 'deck'   ? scope.id   : undefined,
+      scope.type === 'folder' ? scope.id   : undefined,
+    )
       .then(setCards)
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [selectedDeck])
+  }, [scope])
 
   const card = cards[current]
   const isQA = card?.cardType === 'QA'
@@ -272,8 +476,7 @@ export default function ReviewPage() {
     return () => window.removeEventListener('keydown', handler)
   }, [isQA, answerSubmitted, showBack, handleReveal, handleQuality])
 
-  const progress = cards.length > 0 ? (current / cards.length) * 100 : 0
-  const deckName = selectedDeck ? decks.find(d => d.id === selectedDeck)?.name : null
+  const scopeName = scope.type === 'all' ? null : scope.name
 
   // ── Sessão concluída ───────────────────────────────────────────────────────
 
@@ -291,14 +494,14 @@ export default function ReviewPage() {
         </h2>
         <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 32, textAlign: 'center', maxWidth: 340 }}>
           {cards.length === 0
-            ? deckName ? `Nenhum card vencido em "${deckName}".` : 'Todos os cards estão em dia. Volte amanhã!'
+            ? scopeName ? `Nenhum card vencido em "${scopeName}".` : 'Todos os cards estão em dia. Volte amanhã!'
             : `Você revisou ${cards.length} card${cards.length !== 1 ? 's' : ''}. Bom trabalho!`}
         </p>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={() => { setSessionDone(false); setCards([]); setCurrent(0) }} style={{
             padding: '10px 20px', background: 'var(--surface)', border: '1px solid var(--border)',
             borderRadius: 10, color: 'var(--text-muted)', fontFamily: 'inherit', fontSize: 13, cursor: 'pointer',
-          }}>Trocar deck</button>
+          }}>Trocar seleção</button>
           <button onClick={() => navigate('/decks')} style={{
             padding: '10px 24px', background: 'var(--accent)', border: 'none',
             borderRadius: 10, color: '#fff', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, cursor: 'pointer',
@@ -318,7 +521,7 @@ export default function ReviewPage() {
         paddingTop: 88, paddingBottom: 40, paddingLeft: 24, paddingRight: 24, minHeight: '100vh',
       }}>
 
-        <DeckSelector decks={decks} selected={selectedDeck} onSelect={setSelectedDeck} />
+        <ScopeSelector decks={decks} folders={folders} scope={scope} onSelect={setScope} />
 
         {loading ? (
           <div style={{ marginTop: 80 }}>
@@ -330,13 +533,12 @@ export default function ReviewPage() {
           </div>
         ) : (
           <>
-            {/* Barra de progresso */}
-            <div style={{ width: '100%', maxWidth: 600, marginBottom: 20 }}>
+              <div style={{ width: '100%', maxWidth: 600, marginBottom: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                     {current + 1} de {cards.length}
-                    {deckName && <span style={{ marginLeft: 8, color: 'var(--text-faint)' }}>· {deckName}</span>}
+                    {scopeName && <span style={{ marginLeft: 8, color: 'var(--text-faint)' }}>· {scopeName}</span>}
                   </span>
                   {/* Badge do tipo */}
                   <span style={{
@@ -348,11 +550,11 @@ export default function ReviewPage() {
                     {isQA ? 'Pergunta/Resposta' : 'Conceito/Definição'}
                   </span>
                 </div>
-                <span style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500 }}>{Math.round(progress)}%</span>
+                <span style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500 }}>{Math.round((current / cards.length) * 100)}%</span>
               </div>
               <div style={{ height: 3, background: 'var(--surface2)', borderRadius: 99, overflow: 'hidden' }}>
                 <div style={{
-                  height: '100%', width: `${progress}%`,
+                  height: '100%', width: `${(current / cards.length) * 100}%`,
                   background: 'var(--accent)', borderRadius: 99, transition: 'width 0.4s ease',
                 }} />
               </div>

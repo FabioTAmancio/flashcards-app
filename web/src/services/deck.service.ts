@@ -55,8 +55,10 @@ export const flashcardService = {
 
 export const reviewService = {
   // deckId = undefined → todos os decks habilitados
-  getDueFlashcards: async (deckId?: number) => {
-    const params = deckId ? { deckId } : {}
+  getDueFlashcards: async (deckId?: number, folderId?: number) => {
+    const params: Record<string, number> = {}
+    if (deckId)   params.deckId   = deckId
+    if (folderId) params.folderId = folderId
     const { data } = await api.get('/review/due', { params })
     return data
   },

@@ -4,7 +4,7 @@ import Navbar from '../components/Navbar'
 import { deckService } from '../services/deck.service'
 import { folderService, type FolderItem } from '../services/folder.service'
 
-// Tipos
+// Types
 type Deck = {
   id: number; name: string; description: string
   color: string | null; reviewEnabled: boolean

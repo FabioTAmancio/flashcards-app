@@ -1,9 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { authService } from '../services/auth.service'
 import { useAuthStore } from '../store/auth.store'
-import { useNavigate, Navigate} from 'react-router-dom'
+import { useNavigate, Navigate, useSearchParams } from 'react-router-dom'
 
- 
 export default function LoginPage() {
   const [tab, setTab] = useState<'login' | 'register'>('login')
   const [name, setName] = useState('')
@@ -11,11 +10,22 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
- 
-  const setUser = useAuthStore((s) => s.setUser)
+  const [verifyBanner, setVerifyBanner] = useState<'success' | 'error' | 'expired' | null>(null)
 
+  const setUser = useAuthStore((s) => s.setUser)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  useEffect(() => {
+    const verified = searchParams.get('verified')
+    const reason   = searchParams.get('reason') ?? ''
+    if (verified === 'true')  setVerifyBanner('success')
+    if (verified === 'false') {
+      if (reason.toLowerCase().includes('expired')) setVerifyBanner('expired')
+      else setVerifyBanner('error')
+    }
+  }, [searchParams])
 
   if (isAuthenticated) return <Navigate to="/decks" replace />
 
@@ -131,6 +141,59 @@ export default function LoginPage() {
           maxWidth: 400,
           animation: 'fadeUp 0.5s ease forwards',
         }}>
+          {/* Banner de verificação de email */}
+          {verifyBanner === 'success' && (
+            <div style={{
+              marginBottom: 24, padding: '14px 16px',
+              background: 'rgba(34,211,165,0.08)', border: '1px solid rgba(34,211,165,0.25)',
+              borderRadius: 12, display: 'flex', alignItems: 'flex-start', gap: 10,
+            }}>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>✅</span>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#22d3a5', marginBottom: 2 }}>
+                  Email verificado com sucesso!
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                  Sua conta está ativa. Entre abaixo para começar.
+                </div>
+              </div>
+            </div>
+          )}
+          {verifyBanner === 'expired' && (
+            <div style={{
+              marginBottom: 24, padding: '14px 16px',
+              background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)',
+              borderRadius: 12, display: 'flex', alignItems: 'flex-start', gap: 10,
+            }}>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>⏰</span>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#f59e0b', marginBottom: 2 }}>
+                  Link expirado
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                  O link de verificação expirou. Entre na sua conta e solicite um novo email.
+                </div>
+              </div>
+            </div>
+          )}
+          {verifyBanner === 'error' && (
+            <div style={{
+              marginBottom: 24, padding: '14px 16px',
+              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
+              borderRadius: 12, display: 'flex', alignItems: 'flex-start', gap: 10,
+            }}>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--red)', marginBottom: 2 }}>
+                  Link inválido
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                  O link de verificação é inválido ou já foi usado. Entre na conta e solicite um novo.
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Tab switcher */}
           <div style={{
             display: 'flex',

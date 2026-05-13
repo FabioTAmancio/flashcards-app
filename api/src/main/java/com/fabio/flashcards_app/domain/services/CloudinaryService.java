@@ -31,7 +31,7 @@ public class CloudinaryService {
     }
 
     public void delete(String imageUrl) {
-        if(imageUrl != null || imageUrl.isBlank()) return;
+        if (imageUrl == null || imageUrl.isBlank()) return;
         try {
             String publicId = extractPublicId(imageUrl);
             cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());

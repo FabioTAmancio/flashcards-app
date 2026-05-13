@@ -90,6 +90,7 @@ public class FlashcardService {
         return toDTO(f);
     }
 
+    @Transactional
     public void delete(Long id, User user) {
         Flashcard f = findAndValidate(id, user);
         cloudinaryService.delete(f.getFrontImageUrl());
